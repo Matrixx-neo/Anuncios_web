@@ -6,3 +6,5 @@ requests
 google-genai
 fal-client
 google-generativeai
+beautifulsoup4
+requests
