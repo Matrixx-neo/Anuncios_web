@@ -8,3 +8,5 @@ fal-client
 google-generativeai
 beautifulsoup4
 requests
+jinja2
+python-multipart
