@@ -9,7 +9,7 @@ import logging
 import os
 import random
 import urllib.parse
-from typing import List, Optional
+from typing import List, Optional, Dict
 from urllib.parse import urlparse
 
 import google.generativeai as genai
@@ -30,6 +30,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 SCRAPE_TIMEOUT = 2.0
 POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
+
+# CACHÉ EN MEMORIA PARA SCRAPING
+SCRAPE_CACHE: Dict[str, dict] = {}
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -62,10 +65,16 @@ def extract_brand_from_url(raw_url: str) -> str:
 
 def scrape_url(raw_url: str) -> dict:
     url = raw_url.strip()
+    if url in SCRAPE_CACHE:
+        log.info(f"⚡ [CACHE HIT] Datos reutilizados para: {url}")
+        return SCRAPE_CACHE[url]
+
     marca = extract_brand_from_url(url)
     
     if not url.lower().startswith("http"):
-        return {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
+        res = {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
+        SCRAPE_CACHE[url] = res
+        return res
 
     try:
         timeout = httpx.Timeout(SCRAPE_TIMEOUT, connect=SCRAPE_TIMEOUT)
@@ -86,9 +95,13 @@ def scrape_url(raw_url: str) -> dict:
             body_text = " ".join(t.get_text(" ", strip=True) for t in soup.find_all(["h1", "h2", "h3", "p"])[:30])
 
             content = f"Título/Marca: {title or marca}\nDescripción: {description}\nContenido: {body_text}".strip()[:2500]
-            return {"url": url, "title": title or marca, "content": content, "scraped": True}
+            res = {"url": url, "title": title or marca, "content": content, "scraped": True}
+            SCRAPE_CACHE[url] = res
+            return res
     except Exception:
-        return {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
+        res = {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
+        SCRAPE_CACHE[url] = res
+        return res
 
 _METRICA = {
     "type": "object",
@@ -182,10 +195,10 @@ COMPETIDOR DIRECTO ({competitor['url']}):
 
 {linea_angulo}
 
-INSTRUCCIONES:
-1. Realiza una auditoría comparativa exprés.
-2. Cada 'image_prompt' DEBE ser extremadamente detallado en INGLÉS para un modelo de difusión HD (Flux). Especifica: 'Ultra-realistic professional studio product photography, 8k resolution, cinematic commercial lighting, depth of field, vibrant textures, minimalist modern layout, photorealistic'. NO incluyas texto dentro de las imágenes.
-3. Genera EXACTAMENTE 5 placas ordenadas (Gancho, Problema, Solución, Beneficios, CTA).
+INSTRUCCIONES DE PROMPTS DE IMAGEN:
+1. Diseña 5 'image_prompt' breves pero potentes en INGLÉS.
+2. Formato: 'Commercial photo of [PRODUCTO/CONCEPTO], studio lighting, 8k resolution, photorealistic, sharp focus, vibrant colors, premium packaging'.
+3. IMPORTANTE: Limita cada image_prompt a máximo 30 palabras para garantizar respuesta rápida del motor gráfico.
 """
 
     model = genai.GenerativeModel(GEMINI_MODEL)
@@ -203,11 +216,10 @@ INSTRUCCIONES:
     )
     return json.loads(response.text)
 
-def build_pollinations_url(prompt: str, fallback_text: str = "product photography") -> str:
-    base_prompt = (prompt or fallback_text).strip()
-    hd_prompt = f"Professional studio photography of {base_prompt}, high resolution 8k, photorealistic, sharp focus, vibrant aesthetic, commercial advertising"
-    encoded = urllib.parse.quote(hd_prompt)
-    seed = random.randint(1000, 999999)
+def build_pollinations_url(prompt: str) -> str:
+    clean_prompt = f"Professional product shot, {prompt}, 8k, photorealistic"
+    encoded = urllib.parse.quote(clean_prompt)
+    seed = random.randint(100, 99999)
     return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=800&height=1000&nologo=true&seed={seed}"
 
 @app.get("/", response_class=HTMLResponse)
@@ -227,16 +239,15 @@ async def analyze(
 
     async def event_stream():
         try:
-            yield sse("scraping", "start", "⚡ Analizando datos de mercado...")
+            yield sse("scraping", "start", "⚡ Consultando base de datos y web...")
             
-            # Ejecutar scraping en paralelo con tiempo límite estricto
             task_biz = run_in_threadpool(scrape_url, business_url)
             task_comp = run_in_threadpool(scrape_url, competitor_url)
             business, competitor = await asyncio.gather(task_biz, task_comp)
 
             pil_images = []
             if images:
-                yield sse("scraping", "progress", "📸 Optimizando imágenes...")
+                yield sse("scraping", "progress", "📸 Procesando fotografías...")
                 for img in images:
                     if img.content_type and img.content_type.startswith("image/"):
                         contents = await img.read()
@@ -244,27 +255,26 @@ async def analyze(
                             optimized_img = await run_in_threadpool(optimize_image, contents)
                             pil_images.append(optimized_img)
 
-            yield sse("estrategia", "start", "🧠 Generando Dashboard y Análisis estratégico...")
+            yield sse("estrategia", "start", "🧠 Generando estrategia y carrusel...")
             campana = await run_in_threadpool(generate_campaign, business, competitor, angulo, pil_images)
 
-            # ENVIAR DATOS DE TEXTO INMEDIATAMENTE
-            yield sse("estrategia", "done", "📊 ¡Dashboard generado con éxito!", campana)
+            yield sse("estrategia", "done", "📊 ¡Dashboard generado!", campana)
 
-            # ENVIAR URLS DE IMÁGENES AL INSTANTE SIN DELAY
             total = len(campana["carrusel_placas"])
             for i, placa in enumerate(campana["carrusel_placas"]):
-                image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
+                image_url = build_pollinations_url(placa["image_prompt"])
                 
                 yield sse(
                     "imagen",
                     "done",
-                    f"✨ Placa {i + 1}/{total} enviada a renderizado.",
+                    f"✨ Placa {i + 1}/{total} lista para cargar.",
                     {
                         "index": i,
                         "total": total,
                         "tipo": placa["tipo"],
                         "titulo": placa["titulo"],
                         "descripcion": placa["descripcion"],
+                        "image_prompt": placa["image_prompt"],
                         "image_url": image_url
                     }
                 )
@@ -273,7 +283,7 @@ async def analyze(
 
         except Exception as exc:
             log.exception("Error en proceso AdVance AI")
-            yield sse("error", "error", f"⚠️ Ocurrió un inconveniente: {str(exc)}")
+            yield sse("error", "error", f"⚠️ Error: {str(exc)}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 

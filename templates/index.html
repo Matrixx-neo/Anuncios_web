@@ -82,8 +82,10 @@
                         <span class="text-[10px] font-extrabold text-purple-400 uppercase tracking-widest">Estrategia Generada</span>
                         <h2 id="campaignTitle" class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Campaña</h2>
                     </div>
-                    <div id="scoreBadge" class="self-start sm:self-auto bg-purple-500/20 border border-purple-500/50 text-purple-300 text-xs font-extrabold px-3.5 py-1.5 rounded-full">
-                        Score Competencia: --/100
+                    <div class="flex items-center gap-2">
+                        <div id="scoreBadge" class="bg-purple-500/20 border border-purple-500/50 text-purple-300 text-xs font-extrabold px-3 py-1.5 rounded-full">
+                            Score Competencia: --/100
+                        </div>
                     </div>
                 </div>
 
@@ -120,9 +122,14 @@
 
             <!-- Carrusel -->
             <div class="space-y-4">
-                <div>
-                    <h3 class="text-xl font-extrabold text-white">Placas del Carrusel Publicitario HD</h3>
-                    <p class="text-xs text-slate-400">Carga visual de alta calidad en tiempo real</p>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-white">Placas del Carrusel Publicitario HD</h3>
+                        <p class="text-xs text-slate-400">Las imágenes se procesan de forma secuencial en alta calidad</p>
+                    </div>
+                    <button id="btnRegenerate" type="button" class="bg-purple-900/60 hover:bg-purple-800 border border-purple-500/40 text-purple-200 text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-2 self-start sm:self-auto">
+                        🔄 Generar Otro Carrusel
+                    </button>
                 </div>
                 <div id="carouselContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
             </div>
@@ -142,6 +149,9 @@
         const weeklyPlan = document.getElementById('weeklyPlan');
         const recommendationsList = document.getElementById('recommendationsList');
         const hashtagsText = document.getElementById('hashtagsText');
+        const btnRegenerate = document.getElementById('btnRegenerate');
+
+        let pendingImages = [];
 
         function formatMetricValue(val) {
             if (val === undefined || val === null) return '--';
@@ -151,6 +161,87 @@
             return val;
         }
 
+        // CARGA SECUENCIAL CON RETRY AUTOMÁTICO
+        async function processImageQueue() {
+            for (let item of pendingImages) {
+                await loadImageWithRetry(item);
+            }
+        }
+
+        function loadImageWithRetry(item, retries = 3) {
+            return new Promise((resolve) => {
+                const card = document.getElementById(`card-${item.index}`);
+                const loaderText = card.querySelector('.loader-status');
+
+                function attempt(remaining) {
+                    if (loaderText) loaderText.innerText = `Cargando HD (intento ${4 - remaining})...`;
+                    
+                    const img = new Image();
+                    // Agregar timestamp para forzar refresh si fue retry
+                    const src = remaining === retries ? item.image_url : `${item.image_url}&retry=${Date.now()}`;
+                    img.src = src;
+
+                    const timeout = setTimeout(() => {
+                        img.src = "";
+                        if (remaining > 1) {
+                            attempt(remaining - 1);
+                        } else {
+                            if (loaderText) loaderText.innerText = '⚠️ Reintentando render...';
+                            setTimeout(() => attempt(1), 3000);
+                        }
+                    }, 12000); // Timeout de 12 segundos por imagen
+
+                    img.onload = () => {
+                        clearTimeout(timeout);
+                        card.style.backgroundImage = `url('${src}')`;
+                        card.style.backgroundSize = 'cover';
+                        card.style.backgroundPosition = 'center';
+                        
+                        const loader = card.querySelector('.img-loader');
+                        if (loader) loader.remove();
+
+                        // Mostrar botón de descarga HD
+                        const btnDownload = card.querySelector('.btn-download');
+                        if (btnDownload) {
+                            btnDownload.classList.remove('hidden');
+                            btnDownload.onclick = () => downloadImage(src, `placa_${item.index + 1}_${item.tipo}.jpg`);
+                        }
+                        resolve();
+                    };
+
+                    img.onerror = () => {
+                        clearTimeout(timeout);
+                        if (remaining > 1) {
+                            attempt(remaining - 1);
+                        } else {
+                            setTimeout(() => attempt(1), 3000);
+                        }
+                    };
+                }
+
+                attempt(retries);
+            });
+        }
+
+        async function downloadImage(url, filename) {
+            try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch (err) {
+                window.open(url, '_blank');
+            }
+        }
+
+        btnRegenerate.addEventListener('click', () => {
+            form.dispatchEvent(new Event('submit'));
+        });
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
@@ -158,6 +249,7 @@
             statusContainer.classList.remove('hidden');
             dashboard.classList.add('hidden');
             carouselContainer.innerHTML = '';
+            pendingImages = [];
             statusText.innerText = 'Analizando mercado y armando estrategia...';
 
             try {
@@ -182,7 +274,6 @@
                                 const json = JSON.parse(line.replace('data: ', ''));
                                 statusText.innerText = json.mensaje;
 
-                                // RENDER INMEDIATO DE TEXTOS Y DASHBOARD
                                 if (json.stage === 'estrategia' && json.status === 'done') {
                                     dashboard.classList.remove('hidden');
                                     const data = json.data;
@@ -233,20 +324,26 @@
                                     hashtagsText.innerText = data.hashtags.join(' ');
                                 }
 
-                                // CREACIÓN Y CARGA PARALELA DE CARDS DE IMAGEN HD
                                 if (json.stage === 'imagen' && json.status === 'done') {
                                     const d = json.data;
+                                    pendingImages.push(d);
+
                                     const card = document.createElement('div');
                                     card.id = `card-${d.index}`;
                                     card.className = 'glass-card rounded-2xl overflow-hidden flex flex-col justify-between h-[380px] relative border-purple-500/30';
                                     card.innerHTML = `
                                         <div class="img-loader absolute inset-0 loader-shimmer flex flex-col items-center justify-center p-4 text-center z-0">
                                             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400 mb-2"></div>
-                                            <span class="text-xs text-purple-300 font-semibold">Cargando render HD...</span>
+                                            <span class="loader-status text-xs text-purple-300 font-semibold">En cola de render...</span>
                                             <span class="text-[10px] text-slate-400 mt-1">Placa ${d.index + 1} de ${d.total}</span>
                                         </div>
                                         <div class="relative z-10 p-4 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent h-full flex flex-col justify-between">
-                                            <span class="inline-block self-start px-2 py-0.5 rounded-md bg-purple-500/40 border border-purple-400/50 text-[10px] font-bold text-purple-200 uppercase">${d.tipo}</span>
+                                            <div class="flex items-center justify-between">
+                                                <span class="px-2 py-0.5 rounded-md bg-purple-500/40 border border-purple-400/50 text-[10px] font-bold text-purple-200 uppercase">${d.tipo}</span>
+                                                <button type="button" class="btn-download hidden bg-purple-600/80 hover:bg-purple-500 text-white p-1.5 rounded-lg text-xs transition shadow-md" title="Descargar Imagen HD">
+                                                    ⬇️ HD
+                                                </button>
+                                            </div>
                                             <div>
                                                 <h4 class="font-bold text-white text-xs mb-1 leading-snug">${d.titulo}</h4>
                                                 <p class="text-[11px] text-slate-300 leading-relaxed line-clamp-4">${d.descripcion}</p>
@@ -254,21 +351,12 @@
                                         </div>
                                     `;
                                     carouselContainer.appendChild(card);
-
-                                    // Carga asíncrona de imagen en caché del navegador
-                                    const preloader = new Image();
-                                    preloader.src = d.image_url;
-                                    preloader.onload = () => {
-                                        card.style.backgroundImage = `url('${d.image_url}')`;
-                                        card.style.backgroundSize = 'cover';
-                                        card.style.backgroundPosition = 'center';
-                                        const loader = card.querySelector('.img-loader');
-                                        if (loader) loader.remove();
-                                    };
                                 }
 
                                 if (json.stage === 'completo') {
                                     statusContainer.classList.add('hidden');
+                                    // INICIAR DESCARGA Y RENDERIZADO EN SECUENCIA
+                                    processImageQueue();
                                 }
                             } catch (err) {}
                         }
