@@ -75,7 +75,7 @@
       </h1>
       <p class="mt-5 text-slate-400 text-lg max-w-lg">
         Pega tu sitio o red social junto al de un competidor. La IA arma tu score competitivo, métricas
-        comparativas, matriz SWOT, plan semanal y un carrusel de 3 placas con imágenes fotorrealistas gratis.
+        comparativas, matriz SWOT, plan semanal y un carrusel narrativo de 5 placas con imágenes fotorrealistas gratis.
       </p>
     </div>
 
@@ -131,10 +131,12 @@
             <span class="text-[10px] text-slate-400 uppercase tracking-wide">vs. competencia</span>
           </div>
         </div>
+        <p class="text-xs text-slate-500 mt-3 text-center">Qué tan bien posicionado está tu negocio frente a este competidor, según el análisis de la IA.</p>
       </div>
       <div class="glass rounded-2xl p-6">
         <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-3">Métricas comparativas</h3>
         <canvas id="chart-comparativo" height="190"></canvas>
+        <p class="text-xs text-slate-500 mt-3">Comparación estimada (0-100) de engagement, calidad de contenido y frecuencia de publicación.</p>
       </div>
     </div>
 
@@ -169,8 +171,11 @@
       </button>
     </div>
     <div id="hashtags" class="flex flex-wrap gap-2 mb-3 text-xs text-violet"></div>
-    <p class="text-xs text-slate-500 mb-3 md:hidden">← Desliza para ver las 3 placas →</p>
-    <div id="placas" class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 -mx-6 px-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible"></div>
+    <p class="text-xs text-slate-500 mb-3 md:hidden">← Desliza para ver las 5 placas →</p>
+    <div id="placas" class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 -mx-6 px-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10 md:mx-0 md:px-0"></div>
+    <button id="btn-nuevo-angulo" class="hidden btn-press mt-6 w-full sm:w-auto rounded-xl bg-gradient-to-r from-indigo to-violet px-6 py-3 font-semibold text-white shadow-glow hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed">
+      ✨ Generar otro carrusel con diferente enfoque
+    </button>
   </section>
 
 </div>
@@ -189,6 +194,7 @@ const pasosEl = document.getElementById('pasos');
 const tabs = document.getElementById('tabs');
 const tabDashboard = document.getElementById('tab-dashboard');
 const tabCarrusel = document.getElementById('tab-carrusel');
+const btnNuevoAngulo = document.getElementById('btn-nuevo-angulo');
 
 const nombreCampana = document.getElementById('nombre-campana');
 const hashtagsEl = document.getElementById('hashtags');
@@ -196,6 +202,11 @@ const placasEl = document.getElementById('placas');
 
 let chartScore = null;
 let chartComparativo = null;
+let placasData = {};
+let ultimoBusinessUrl = '';
+let ultimoCompetitorUrl = '';
+const ANGULOS = ['Educativo', 'Oferta Agresiva', 'Comparativa', 'Emocional', 'Urgencia'];
+let anguloIndex = -1;
 
 const PASOS = [
   { key: 'scraping',   label: 'Scraping' },
@@ -203,6 +214,8 @@ const PASOS = [
   { key: 'imagen-0',   label: 'Placa 1' },
   { key: 'imagen-1',   label: 'Placa 2' },
   { key: 'imagen-2',   label: 'Placa 3' },
+  { key: 'imagen-3',   label: 'Placa 4' },
+  { key: 'imagen-4',   label: 'Placa 5' },
   { key: 'completo',   label: 'Listo' },
 ];
 
@@ -295,17 +308,23 @@ function renderRecomendaciones(lista) {
     </li>`).join('');
 }
 
-function esqueletoPlaca(tipo, index) {
-  return `<div id="placa-${index}" class="glass rounded-2xl overflow-hidden flex flex-col shrink-0 w-[82%] sm:w-[320px] md:w-auto snap-center">
-    <div class="flex items-center gap-2 px-3 py-2 border-b border-white/5">
-      <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo to-violet"></div>
-      <span class="text-xs font-medium text-slate-300">tu_marca</span>
-      <span class="ml-auto text-[10px] uppercase tracking-wide text-indigo/80 bg-indigo/10 rounded-full px-2 py-0.5">${tipo}</span>
+function crearPlaca(index, total, tipo, titulo, descripcion) {
+  const numero = String(index + 1).padStart(2, '0');
+  return `<div id="placa-${index}" class="glass rounded-2xl overflow-hidden shrink-0 w-[82%] sm:w-[300px] snap-center flex flex-col">
+    <div class="relative aspect-[4/5]">
+      <div id="fondo-${index}" class="absolute inset-0 skeleton"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/5 pointer-events-none"></div>
+      <span class="absolute top-3 left-3 text-[10px] font-semibold uppercase tracking-wide bg-white/10 backdrop-blur border border-white/20 text-white rounded-full px-3 py-1">
+        PLACA ${numero} / ${String(total).padStart(2, '0')} · ${tipo}
+      </span>
+      <div class="absolute bottom-0 inset-x-0 p-4">
+        <h3 class="text-white font-display font-extrabold text-lg leading-tight" style="text-shadow:0 2px 14px rgba(0,0,0,0.85)">${titulo}</h3>
+        <p class="text-white/90 text-xs mt-1.5 leading-relaxed" style="text-shadow:0 1px 8px rgba(0,0,0,0.85)">${descripcion}</p>
+      </div>
     </div>
-    <div class="skeleton aspect-[4/5]"></div>
-    <div class="p-4 flex-1 flex flex-col">
-      <div class="h-4 w-3/4 bg-white/10 rounded skel-titulo"></div>
-      <div class="h-3 w-full bg-white/5 rounded mt-3 skel-copy"></div>
+    <div class="p-3 flex gap-2 bg-black/20">
+      <button class="btn-press btn-copiar-copy flex-1 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5">📋 Copiar texto</button>
+      <button class="btn-press btn-descargar flex-1 text-xs font-semibold text-white bg-gradient-to-r from-indigo to-violet rounded-lg px-3 py-1.5 opacity-40 pointer-events-none">⬇️ Descargar HD</button>
     </div>
   </div>`;
 }
@@ -340,18 +359,31 @@ function copiarTexto(texto, boton) {
 
 async function manejarEnvio(e) {
   e.preventDefault();
-  formError.classList.add('hidden');
-
   const business_url = document.getElementById('business_url').value.trim();
   const competitor_url = document.getElementById('competitor_url').value.trim();
+  ultimoBusinessUrl = business_url;
+  ultimoCompetitorUrl = competitor_url;
+  anguloIndex = -1;
+  await ejecutarAnalisis(business_url, competitor_url, null);
+}
 
+async function generarNuevoAngulo() {
+  anguloIndex = (anguloIndex + 1) % ANGULOS.length;
+  await ejecutarAnalisis(ultimoBusinessUrl, ultimoCompetitorUrl, ANGULOS[anguloIndex]);
+}
+
+async function ejecutarAnalisis(business_url, competitor_url, angulo) {
+  formError.classList.add('hidden');
   btn.disabled = true;
-  btnTexto.textContent = 'Generando campaña…';
+  btnNuevoAngulo.disabled = true;
+  btnTexto.textContent = angulo ? `Generando enfoque "${angulo}"…` : 'Generando campaña…';
   progreso.classList.remove('hidden');
   tabs.classList.add('hidden');
   tabDashboard.classList.add('hidden');
   tabCarrusel.classList.add('hidden');
+  btnNuevoAngulo.classList.add('hidden');
   placasEl.innerHTML = '';
+  placasData = {};
   barraProgreso.style.width = '4%';
   const hecho = new Set();
   pintarPasos('scraping', hecho);
@@ -360,7 +392,7 @@ async function manejarEnvio(e) {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ business_url, competitor_url }),
+      body: JSON.stringify({ business_url, competitor_url, angulo }),
     });
     if (!res.ok || !res.body) throw new Error('No se pudo iniciar el análisis.');
 
@@ -385,6 +417,7 @@ async function manejarEnvio(e) {
     formError.classList.remove('hidden');
   } finally {
     btn.disabled = false;
+    btnNuevoAngulo.disabled = false;
     btnTexto.textContent = 'Analizar Competencia y Generar Publicidad';
   }
 }
@@ -406,45 +439,34 @@ function procesarEvento(evento, hecho) {
     renderPlanSemanal(data.plan_semanal);
     renderRecomendaciones(data.recomendaciones_clave);
     nombreCampana.textContent = data.nombre_campana;
+    hashtagsEl.innerHTML = data.hashtags.map(h => `<span class="glass rounded-full px-3 py-1">${h}</span>`).join('');
   }
 
   if (stage === 'imagen' && status === 'start') {
     tabCarrusel.classList.remove('hidden');
-    placasEl.insertAdjacentHTML('beforeend', esqueletoPlaca(data.tipo, data.index));
+    btnNuevoAngulo.classList.remove('hidden');
+    placasData[data.index] = { tipo: data.tipo, titulo: data.titulo, descripcion: data.descripcion };
+    placasEl.insertAdjacentHTML('beforeend', crearPlaca(data.index, data.total, data.tipo, data.titulo, data.descripcion));
     const placa = document.getElementById(`placa-${data.index}`);
-    const titulo = placa.querySelector('.skel-titulo');
-    titulo.textContent = data.titulo;
-    titulo.className = 'font-semibold text-sm';
-    if (data.hashtags?.length) {
-      placa.querySelector('.p-4').insertAdjacentHTML('beforeend',
-        `<div class="flex flex-wrap gap-1 mt-2">${data.hashtags.map(h => `<span class="text-[10px] text-violet/90">${h}</span>`).join(' ')}</div>`);
-    }
+    placa.querySelector('.btn-copiar-copy').addEventListener('click', (e) =>
+      copiarTexto(`${placasData[data.index].titulo} — ${placasData[data.index].descripcion}`, e.target));
   }
 
   if (stage === 'imagen' && status === 'done') {
+    placasData[data.index].image_url = data.image_url;
+    const fondo = document.getElementById(`fondo-${data.index}`);
+    if (fondo) fondo.outerHTML = `<img id="fondo-${data.index}" src="${data.image_url}" alt="Fondo de placa" class="absolute inset-0 w-full h-full object-cover" loading="lazy">`;
     const placa = document.getElementById(`placa-${data.index}`);
-    if (!placa) return;
-    const img = placa.querySelector('.skeleton');
-    if (img) img.outerHTML = `<img src="${data.image_url}" alt="Placa publicitaria" class="aspect-[4/5] w-full object-cover" loading="lazy">`;
+    const btnDescargar = placa?.querySelector('.btn-descargar');
+    if (btnDescargar) {
+      btnDescargar.classList.remove('opacity-40', 'pointer-events-none');
+      btnDescargar.addEventListener('click', (e) =>
+        descargarImagen(data.image_url, `adgenius-placa-${data.index + 1}-${placasData[data.index].tipo}`.toLowerCase(), e.target));
+    }
   }
 
   if (stage === 'completo' && status === 'done') {
-    hashtagsEl.innerHTML = data.hashtags.map(h => `<span class="glass rounded-full px-3 py-1">${h}</span>`).join('');
-    data.placas.forEach((p, i) => {
-      const placa = document.getElementById(`placa-${i}`);
-      if (!placa) return;
-      const copyEl = placa.querySelector('.skel-copy');
-      if (copyEl) {
-        copyEl.outerHTML = `<p class="text-xs text-slate-400 mt-2 leading-relaxed flex-1">${p.copy}</p>
-          <div class="flex gap-2 mt-3">
-            <button class="btn-press btn-copiar-copy flex-1 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5">📋 Copiar copy</button>
-          </div>
-          <button class="btn-press btn-descargar mt-2 w-full text-xs font-semibold text-white bg-gradient-to-r from-indigo to-violet rounded-lg px-3 py-2 shadow-glowSoft">⬇️ Descargar Imagen HD</button>`;
-        placa.querySelector('.btn-copiar-copy').addEventListener('click', (e) => copiarTexto(p.copy, e.target));
-        placa.querySelector('.btn-descargar').addEventListener('click', (e) =>
-          descargarImagen(p.image_url, `adgenius-placa-${i + 1}-${p.tipo}`.toLowerCase(), e.target));
-      }
-    });
+    btnNuevoAngulo.classList.remove('hidden');
   }
 
   if (stage === 'error') {
@@ -458,6 +480,7 @@ document.getElementById('btn-copiar-hashtags').addEventListener('click', (e) => 
   copiarTexto(texto, e.target);
 });
 
+btnNuevoAngulo.addEventListener('click', generarNuevoAngulo);
 form.addEventListener('submit', manejarEnvio);
 </script>
 </body>

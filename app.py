@@ -67,6 +67,7 @@ SOCIAL_DOMAINS = ("instagram.com", "tiktok.com", "facebook.com", "twitter.com", 
 class AnalyzeRequest(BaseModel):
     business_url: str = Field(..., description="URL o handle del negocio propio")
     competitor_url: str = Field(..., description="URL o nombre del competidor")
+    angulo: Optional[str] = Field(default=None, description="Enfoque opcional: Educativo, Oferta Agresiva, Comparativa, Emocional, Urgencia...")
 
 
 # --------------------------------------------------------------------------------------
@@ -137,7 +138,7 @@ def scrape_url(raw_url: str) -> dict:
 
 
 # --------------------------------------------------------------------------------------
-# Módulo de IA (Gemini) — inteligencia competitiva + estrategia + copywriting en UNA sola llamada
+# Módulo de IA (Gemini) — inteligencia competitiva + carrusel narrativo en UNA sola llamada
 # --------------------------------------------------------------------------------------
 
 _METRICA = {
@@ -180,37 +181,46 @@ CAMPAIGN_SCHEMA = {
             "required": ["lunes", "miercoles", "viernes"],
         },
         "recomendaciones_clave": {"type": "array", "items": {"type": "string"}},
+        "hashtags": {"type": "array", "items": {"type": "string"}},
         "carrusel_placas": {
             "type": "array",
+            "minItems": 5,
+            "maxItems": 5,
             "items": {
                 "type": "object",
                 "properties": {
-                    "tipo": {"type": "string", "enum": ["Gancho", "Beneficio", "CTA"]},
+                    "tipo": {"type": "string", "enum": ["Gancho", "Problema", "Solucion", "Beneficios", "CTA"]},
                     "titulo": {"type": "string"},
-                    "copy": {"type": "string"},
-                    "hashtags": {"type": "array", "items": {"type": "string"}},
+                    "descripcion": {"type": "string"},
                     "image_prompt": {
                         "type": "string",
-                        "description": "Prompt en inglés, hiperespecífico y fotorrealista para Flux",
+                        "description": "Prompt en inglés, conciso (15-20 palabras), fondo fotográfico neutro/estudio",
                     },
                 },
-                "required": ["tipo", "titulo", "copy", "hashtags", "image_prompt"],
+                "required": ["tipo", "titulo", "descripcion", "image_prompt"],
             },
         },
     },
     "required": [
         "nombre_campana", "score_competencia", "metricas_comparativas",
-        "matriz_swot", "plan_semanal", "recomendaciones_clave", "carrusel_placas",
+        "matriz_swot", "plan_semanal", "recomendaciones_clave", "hashtags", "carrusel_placas",
     ],
 }
 
 
-def generate_campaign(business: dict, competitor: dict) -> dict:
+def generate_campaign(business: dict, competitor: dict, angulo: Optional[str] = None) -> dict:
     if not GEMINI_API_KEY:
         raise RuntimeError("Falta configurar la variable de entorno GEMINI_API_KEY")
 
+    linea_angulo = (
+        f'Ángulo/enfoque solicitado para esta versión de la campaña: "{angulo}". Adapta tono, ganchos y CTA a ese enfoque.'
+        if angulo else
+        "Usa un ángulo equilibrado, profesional y persuasivo por defecto."
+    )
+
     prompt = f"""Eres un estratega senior de marketing digital, analista de inteligencia competitiva y director
-creativo publicitario para carruseles de alto rendimiento en Instagram/TikTok Ads.
+creativo publicitario de agencia premium, experto en carruseles narrativos de alto rendimiento para
+Instagram/TikTok Ads.
 
 NEGOCIO PROPIO ({business['url']}):
 {business['content']}
@@ -218,7 +228,9 @@ NEGOCIO PROPIO ({business['url']}):
 COMPETIDOR A ANALIZAR ({competitor['url']}):
 {competitor['content']}
 
-Genera un análisis y campaña completos en JSON con:
+{linea_angulo}
+
+Genera un análisis y UN ÚNICO carrusel narrativo completos en JSON con:
 - nombre_campana: nombre corto y memorable de la campaña.
 - score_competencia: entero 0-100 que representa qué tan bien posicionado está el negocio propio frente al rival
   (más alto = mejor posicionado). Sé realista y variado, no siempre uses 50.
@@ -228,18 +240,21 @@ Genera un análisis y campaña completos en JSON con:
   u oportunidades que el negocio propio puede explotar).
 - plan_semanal: una idea táctica concreta y su objetivo de negocio para lunes, miércoles y viernes.
 - recomendaciones_clave: exactamente 3 acciones inmediatas y accionables para el negocio propio.
-- carrusel_placas: array de exactamente 3 objetos en este orden:
-    1) tipo="Gancho": detiene el scroll, plantea el problema o deseo.
-    2) tipo="Beneficio": comunica el valor diferencial concreto.
-    3) tipo="CTA": llamado a la acción claro y urgente.
+- hashtags: 6 a 8 hashtags relevantes en español, con #, para toda la campaña.
+- carrusel_placas: array de EXACTAMENTE 5 objetos, en este orden narrativo obligatorio:
+    1) tipo="Gancho": título de alto impacto que detiene el scroll + subtítulo breve.
+    2) tipo="Problema": explica el riesgo, la molestia o el punto de dolor actual del cliente.
+    3) tipo="Solucion": presenta la propuesta de valor del negocio propio como la solución.
+    4) tipo="Beneficios": 2-3 puntos fuertes/diferenciadores frente al rival (puedes usar viñetas dentro de "descripcion").
+    5) tipo="CTA": oferta concreta, incentivo y el paso a seguir (ej. "Escríbenos ahora").
   Cada placa necesita:
-    - titulo: headline corto para sobreponer en la imagen (máx 8 palabras, en español).
-    - copy: copy de apoyo para el pie de foto (1-2 frases, en español).
-    - hashtags: 4 a 6 hashtags relevantes en español, con #, específicos de esa placa.
-    - image_prompt: prompt EN INGLÉS, hiperespecífico, para una imagen publicitaria fotorrealista: describe
-      producto/escena, iluminación de estudio profesional ("professional studio lighting"), lente 85mm
-      ("shot on 85mm lens"), altísimo detalle ("hyperdetailed, 8k"), composición comercial premium.
-      No menciones texto, letras ni logos dentro de la imagen.
+    - titulo: headline corto y contundente (máx 8 palabras, en español).
+    - descripcion: texto de apoyo breve (máx 2 frases cortas, en español) legible como overlay sobre una foto.
+    - image_prompt: prompt EN INGLÉS, CONCISO (15-20 palabras), enfocado SOLO en una fotografía de fondo
+      neutra/minimalista tipo estudio, coherente con el momento narrativo de esa placa — ej. estilo
+      "clean minimal aesthetic background, natural soft lighting, studio shot, high resolution".
+      La composición debe quedar despejada para que un texto se pueda superponer con buena legibilidad.
+      No incluyas texto, letras ni logos dentro de la imagen.
 """
     model = genai.GenerativeModel(GEMINI_MODEL)
     response = model.generate_content(
@@ -260,11 +275,7 @@ Genera un análisis y campaña completos en JSON con:
 
 def build_pollinations_url(prompt: str, fallback_text: str = "AdGenius") -> str:
     texto = (prompt or fallback_text).strip()
-    prompt_enriquecido = (
-        f"{texto}, professional studio lighting, shot on 85mm lens, hyperdetailed, 8k, "
-        f"photorealistic commercial advertising photography, no printed text, no watermark, no logo"
-    )
-    encoded = urllib.parse.quote(prompt_enriquecido)
+    encoded = urllib.parse.quote(texto)  # sanitización obligatoria del prompt
     seed = random.randint(1, 999_999)
     return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=1080&height=1350&nologo=true&seed={seed}"
 
@@ -293,37 +304,27 @@ async def analyze(payload: AnalyzeRequest):
             yield sse("scraping", "done", "🔍 Marca y competencia identificadas.",
                        {"business_title": business["title"], "competitor_title": competitor["title"]})
 
-            yield sse("estrategia", "start", "🧠 Generando análisis competitivo, métricas y estrategia con IA...")
-            campana = await run_in_threadpool(generate_campaign, business, competitor)
-            yield sse("estrategia", "done", "🧠 Estrategia, métricas y plan semanal listos.", {
+            yield sse("estrategia", "start", "🧠 Generando análisis competitivo, métricas y carrusel narrativo con IA...")
+            campana = await run_in_threadpool(generate_campaign, business, competitor, payload.angulo)
+            yield sse("estrategia", "done", "🧠 Estrategia, métricas y carrusel listos.", {
                 "nombre_campana": campana["nombre_campana"],
                 "score_competencia": campana["score_competencia"],
                 "metricas_comparativas": campana["metricas_comparativas"],
                 "matriz_swot": campana["matriz_swot"],
                 "plan_semanal": campana["plan_semanal"],
                 "recomendaciones_clave": campana["recomendaciones_clave"],
+                "hashtags": campana["hashtags"],
             })
 
-            placas_finales = []
-            hashtags_totales = []
             total = len(campana["carrusel_placas"])
             for i, placa in enumerate(campana["carrusel_placas"]):
-                yield sse("imagen", "start", f"🎨 Renderizando imagen fotorrealista con Pollinations.ai (Placa {i + 1}/{total})...",
-                           {"index": i, "tipo": placa["tipo"], "titulo": placa["titulo"], "hashtags": placa["hashtags"]})
-                await asyncio.sleep(0.35)  # pacing visual: construir la URL es instantáneo
+                yield sse("imagen", "start", f"🎨 Renderizando fondo fotorrealista con Pollinations.ai (Placa {i + 1}/{total})...",
+                           {"index": i, "total": total, "tipo": placa["tipo"], "titulo": placa["titulo"], "descripcion": placa["descripcion"]})
+                await asyncio.sleep(0.3)  # pacing visual: construir la URL es instantáneo
                 image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
-                placa_final = {**placa, "image_url": image_url}
-                placas_finales.append(placa_final)
-                for h in placa["hashtags"]:
-                    if h not in hashtags_totales:
-                        hashtags_totales.append(h)
                 yield sse("imagen", "done", f"🎨 Placa {i + 1}/{total} lista.", {"index": i, "image_url": image_url})
 
-            yield sse("completo", "done", "✨ Campaña lista para lanzar.", {
-                "nombre_campana": campana["nombre_campana"],
-                "hashtags": hashtags_totales,
-                "placas": placas_finales,
-            })
+            yield sse("completo", "done", "✨ Carrusel listo para lanzar.", {"nombre_campana": campana["nombre_campana"]})
         except Exception as exc:  # noqa: BLE001
             log.exception("Error en el pipeline de análisis")
             yield sse("error", "error", "⚠️ Ocurrió un error durante la generación.", {"mensaje": str(exc)})
