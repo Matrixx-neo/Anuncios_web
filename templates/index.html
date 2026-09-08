@@ -1,84 +1,339 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdGenius IA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-6 font-sans">
-    <div class="max-w-3xl mx-auto">
-        <h1 class="text-3xl font-bold text-blue-400 mb-6 text-center">Generador de Anuncios IA</h1>
-        <form id="adForm" class="bg-slate-800 p-6 rounded-lg space-y-4 shadow-lg mb-6">
-            <div>
-                <label class="block text-xs uppercase font-bold text-slate-300 mb-1">Tu Producto / Nombre / URL</label>
-                <input type="text" id="producto" name="producto" required class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
-            </div>
-            <div>
-                <label class="block text-xs uppercase font-bold text-slate-300 mb-1">Descripción / Beneficios / URL Competidor</label>
-                <textarea id="descripcion" name="descripcion" rows="3" required class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white"></textarea>
-            </div>
-            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-3 rounded text-white transition">Generar Anuncio</button>
-        </form>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdGenius — Publicidad generada por IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Plus Jakarta Sans', 'sans-serif'] },
+        colors: {
+          base: '#09090f',
+          panel: '#12121c',
+          indigo: '#6366f1',
+          violet: '#8b5cf6',
+        },
+        boxShadow: {
+          glow: '0 0 40px -8px rgba(99,102,241,0.5)',
+          glowSoft: '0 0 24px -6px rgba(139,92,246,0.35)',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  body { background: radial-gradient(1200px 600px at 10% -10%, rgba(99,102,241,0.16), transparent),
+                      radial-gradient(900px 500px at 100% 0%, rgba(139,92,246,0.12), transparent),
+                      #09090f; }
+  .glass { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(16px); }
+  .input-glow:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.15); }
+  .btn-press:active { transform: scale(0.98); }
+  ::-webkit-scrollbar { height: 8px; width: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
 
-        <div id="status" class="hidden bg-slate-800 p-4 rounded text-blue-400 font-medium mb-6"></div>
-        <div id="results" class="hidden space-y-6">
-            <div id="analysis" class="bg-slate-800 p-6 rounded text-sm text-slate-300"></div>
-            <div id="placas" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-        </div>
+  @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.1) 37%, rgba(255,255,255,0.04) 63%);
+    background-size: 800px 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  @keyframes barGlow { 0% { background-position: 0 0; } 100% { background-position: 40px 0; } }
+  .bar-glow {
+    background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 10px, transparent 10px 20px);
+    animation: barGlow 1s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { animation: spin 0.8s linear infinite; }
+
+  @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(99,102,241,0.45); } 100% { box-shadow: 0 0 0 9px rgba(99,102,241,0); } }
+  .step-active { animation: pulseRing 1.3s ease-out infinite; }
+
+  .fade-in { animation: fadeIn .45s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body class="min-h-screen text-slate-100 font-sans antialiased">
+
+<div class="max-w-6xl mx-auto px-6 py-10">
+
+  <!-- Encabezado -->
+  <header class="flex items-center justify-between mb-14">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-violet shadow-glow"></div>
+      <span class="text-lg font-bold tracking-tight font-display">AdGenius</span>
+      <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo bg-indigo/10 border border-indigo/30 rounded-full px-2 py-0.5 ml-1">Pro</span>
+    </div>
+    <span class="text-sm text-slate-400 hidden sm:block">Análisis de competencia + generación publicitaria con IA</span>
+  </header>
+
+  <!-- Hero + formulario -->
+  <section class="grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center mb-16">
+    <div>
+      <h1 class="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight font-display">
+        Convierte cualquier URL en una
+        <span class="bg-gradient-to-r from-indigo to-violet bg-clip-text text-transparent">campaña publicitaria</span>
+        lista para publicar
+      </h1>
+      <p class="mt-5 text-slate-400 text-lg max-w-lg">
+        Pega tu sitio o red social junto al de un competidor. La IA detecta su ángulo estratégico, encuentra tu
+        oportunidad diferencial y arma un carrusel de 3 placas con copys, hashtags e imágenes fotorrealistas.
+      </p>
     </div>
 
-    <script>
-        const form = document.getElementById('adForm');
-        const status = document.getElementById('status');
-        const results = document.getElementById('results');
+    <form id="form-analizar" class="glass rounded-2xl p-6 shadow-glow">
+      <label class="block text-sm text-slate-300 mb-1.5" for="business_url">Tu negocio o producto</label>
+      <input id="business_url" name="business_url" type="text" required
+        placeholder="https://tunegocio.com o instagram.com/tumarca"
+        class="input-glow w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm placeholder:text-slate-500 mb-4 transition">
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            status.innerText = 'Procesando...';
-            status.classList.remove('hidden');
-            results.classList.add('hidden');
+      <label class="block text-sm text-slate-300 mb-1.5" for="competitor_url">Competidor directo</label>
+      <input id="competitor_url" name="competitor_url" type="text" required
+        placeholder="https://competidor.com o @competidor"
+        class="input-glow w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm placeholder:text-slate-500 mb-6 transition">
 
-            const response = await fetch('/generar', { method: 'POST', body: new FormData(form) });
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+      <button id="btn-analizar" type="submit"
+        class="btn-press w-full rounded-xl bg-gradient-to-r from-indigo to-violet py-3.5 font-semibold text-white shadow-glow hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+        <span id="btn-texto">Analizar Competencia y Generar Publicidad</span>
+      </button>
+      <p id="form-error" class="hidden mt-3 text-sm text-red-400"></p>
+    </form>
+  </section>
 
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const payload = JSON.parse(line.replace('data: ', ''));
-                        if (payload.stage === 'scraping') status.innerText = 'Scrapeando información...';
-                        if (payload.stage === 'analisis') status.innerText = 'Analizando competencia...';
-                        if (payload.stage === 'estrategia') status.innerText = 'Diseñando carrusel...';
-                        if (payload.stage === 'complete') {
-                            status.innerText = '¡Completado!';
-                            render(payload.data);
-                        }
-                    }
-                }
-            }
-        });
+  <!-- Progreso -->
+  <section id="progreso" class="hidden glass rounded-2xl p-6 mb-10 fade-in">
+    <div class="flex items-center gap-3 mb-4">
+      <svg class="spinner w-4 h-4 text-indigo" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/>
+        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <span id="mensaje-actual" class="text-sm font-medium text-slate-200">Iniciando...</span>
+    </div>
+    <div class="w-full h-2 rounded-full bg-white/5 overflow-hidden mb-5">
+      <div id="barra-progreso" class="h-full rounded-full bg-gradient-to-r from-indigo to-violet bar-glow transition-all duration-500" style="width: 4%"></div>
+    </div>
+    <div class="flex flex-wrap gap-y-3 gap-x-6 text-xs" id="pasos"></div>
+  </section>
 
-        function render(data) {
-            results.classList.remove('hidden');
-            document.getElementById('analysis').innerHTML = `
-                <h3 class="font-bold text-lg text-white mb-2">Análisis de Competencia</h3>
-                <p><strong>Oportunidad:</strong> ${data.analisis.oportunidad_clave}</p>
-                <p><strong>Tono:</strong> ${data.analisis.tono_de_marca}</p>
-            `;
-            document.getElementById('placas').innerHTML = data.placas.map(p => `
-                <div class="bg-slate-800 rounded overflow-hidden p-3 border border-slate-700">
-                    ${p.image_url ? `<img src="${p.image_url}" class="w-full h-40 object-cover mb-2 rounded">` : ''}
-                    <span class="text-xs bg-blue-900 text-blue-200 px-2 py-0.5 rounded uppercase font-bold">${p.tipo}</span>
-                    <h4 class="font-bold text-white mt-1">${p.titulo}</h4>
-                    <p class="text-xs text-slate-400 mt-1">${p.copy}</p>
-                </div>
-            `).join('');
-        }
-    </script>
+  <!-- Análisis estratégico -->
+  <section id="seccion-analisis" class="hidden grid md:grid-cols-3 gap-5 mb-10 fade-in">
+    <div class="glass rounded-2xl p-6">
+      <h3 class="font-semibold text-indigo mb-3 text-sm uppercase tracking-wide">Puntos fuertes del competidor</h3>
+      <ul id="lista-puntos-fuertes" class="space-y-2 text-sm text-slate-300"></ul>
+    </div>
+    <div class="glass rounded-2xl p-6">
+      <h3 class="font-semibold text-violet mb-3 text-sm uppercase tracking-wide">Oportunidad clave</h3>
+      <p id="texto-oportunidad" class="text-sm text-slate-300 leading-relaxed"></p>
+    </div>
+    <div class="glass rounded-2xl p-6">
+      <h3 class="font-semibold text-emerald-400 mb-3 text-sm uppercase tracking-wide">Tono de voz sugerido</h3>
+      <p id="texto-tono" class="text-sm text-slate-300 leading-relaxed"></p>
+    </div>
+  </section>
+
+  <!-- Campaña / carrusel -->
+  <section id="seccion-campana" class="hidden mb-16 fade-in">
+    <div class="flex items-baseline justify-between mb-5 flex-wrap gap-3">
+      <h2 id="nombre-campana" class="text-2xl font-bold font-display"></h2>
+      <button id="btn-copiar-hashtags" class="btn-press text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-full px-3 py-1.5 glass">
+        📋 Copiar hashtags
+      </button>
+    </div>
+    <div id="hashtags" class="flex flex-wrap gap-2 mb-6 text-xs text-violet"></div>
+    <div id="placas" class="grid md:grid-cols-3 gap-6"></div>
+  </section>
+
+</div>
+
+<script>
+const form = document.getElementById('form-analizar');
+const btn = document.getElementById('btn-analizar');
+const btnTexto = document.getElementById('btn-texto');
+const formError = document.getElementById('form-error');
+
+const progreso = document.getElementById('progreso');
+const mensajeActual = document.getElementById('mensaje-actual');
+const barraProgreso = document.getElementById('barra-progreso');
+const pasosEl = document.getElementById('pasos');
+
+const seccionAnalisis = document.getElementById('seccion-analisis');
+const listaPuntosFuertes = document.getElementById('lista-puntos-fuertes');
+const textoOportunidad = document.getElementById('texto-oportunidad');
+const textoTono = document.getElementById('texto-tono');
+
+const seccionCampana = document.getElementById('seccion-campana');
+const nombreCampana = document.getElementById('nombre-campana');
+const hashtagsEl = document.getElementById('hashtags');
+const placasEl = document.getElementById('placas');
+
+const PASOS = [
+  { key: 'scraping',   label: 'Scraping' },
+  { key: 'analisis',   label: 'Análisis IA' },
+  { key: 'estrategia', label: 'Copywriting' },
+  { key: 'imagen-0',   label: 'Placa 1' },
+  { key: 'imagen-1',   label: 'Placa 2' },
+  { key: 'imagen-2',   label: 'Placa 3' },
+  { key: 'completo',   label: 'Listo' },
+];
+
+function pintarPasos(activaKey, hecho) {
+  pasosEl.innerHTML = PASOS.map(p => {
+    const activo = p.key === activaKey;
+    const completado = hecho.has(p.key);
+    const dot = completado ? 'bg-indigo' : activo ? 'bg-indigo step-active' : 'bg-white/15';
+    const texto = completado || activo ? 'text-slate-100' : 'text-slate-500';
+    const icono = completado ? '✓' : '';
+    return `<div class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full ${dot} flex items-center justify-center"></span>
+      <span class="${texto}">${icono ? icono + ' ' : ''}${p.label}</span>
+    </div>`;
+  }).join('');
+  const idx = PASOS.findIndex(p => p.key === activaKey);
+  const pct = Math.max(4, Math.round(((idx + 1) / PASOS.length) * 100));
+  barraProgreso.style.width = `${pct}%`;
+}
+
+function esqueletoPlaca(tipo, index) {
+  return `<div id="placa-${index}" class="glass rounded-2xl overflow-hidden flex flex-col">
+    <div class="flex items-center gap-2 px-3 py-2 border-b border-white/5">
+      <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo to-violet"></div>
+      <span class="text-xs font-medium text-slate-300">tu_marca</span>
+      <span class="ml-auto text-[10px] uppercase tracking-wide text-indigo/80 bg-indigo/10 rounded-full px-2 py-0.5">${tipo}</span>
+    </div>
+    <div class="skeleton aspect-square"></div>
+    <div class="p-4 flex-1 flex flex-col">
+      <div class="h-4 w-3/4 bg-white/10 rounded skel-titulo"></div>
+      <div class="h-3 w-full bg-white/5 rounded mt-3 skel-copy"></div>
+    </div>
+  </div>`;
+}
+
+async function manejarEnvio(e) {
+  e.preventDefault();
+  formError.classList.add('hidden');
+
+  const business_url = document.getElementById('business_url').value.trim();
+  const competitor_url = document.getElementById('competitor_url').value.trim();
+
+  btn.disabled = true;
+  btnTexto.textContent = 'Generando campaña…';
+  progreso.classList.remove('hidden');
+  seccionAnalisis.classList.add('hidden');
+  seccionCampana.classList.add('hidden');
+  placasEl.innerHTML = '';
+  barraProgreso.style.width = '4%';
+  const hecho = new Set();
+  pintarPasos('scraping', hecho);
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ business_url, competitor_url }),
+    });
+    if (!res.ok || !res.body) throw new Error('No se pudo iniciar el análisis.');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const bloques = buffer.split('\n\n');
+      buffer = bloques.pop();
+
+      for (const bloque of bloques) {
+        const linea = bloque.split('\n').find(l => l.startsWith('data: '));
+        if (!linea) continue;
+        procesarEvento(JSON.parse(linea.slice(6)), hecho);
+      }
+    }
+  } catch (err) {
+    formError.textContent = err.message || 'Ocurrió un error al generar la campaña.';
+    formError.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btnTexto.textContent = 'Analizar Competencia y Generar Publicidad';
+  }
+}
+
+function copiarTexto(texto, boton) {
+  navigator.clipboard.writeText(texto);
+  const original = boton.textContent;
+  boton.textContent = '✓ Copiado';
+  setTimeout(() => { boton.textContent = original; }, 1500);
+}
+
+function procesarEvento(evento, hecho) {
+  const { stage, status, mensaje, data } = evento;
+  const key = stage === 'imagen' ? `imagen-${data.index}` : stage;
+
+  if (mensaje) mensajeActual.textContent = mensaje;
+  if (status === 'done') hecho.add(key);
+  pintarPasos(key, hecho);
+
+  if (stage === 'analisis' && status === 'done') {
+    listaPuntosFuertes.innerHTML = data.puntos_fuertes.map(p => `<li class="flex gap-2"><span class="text-indigo">→</span>${p}</li>`).join('');
+    textoOportunidad.textContent = data.oportunidad_clave;
+    textoTono.textContent = data.tono_voz_sugerido;
+    seccionAnalisis.classList.remove('hidden');
+  }
+
+  if (stage === 'estrategia' && status === 'done') {
+    nombreCampana.textContent = data.nombre_campana;
+    hashtagsEl.innerHTML = data.hashtags.map(h => `<span class="glass rounded-full px-3 py-1">${h}</span>`).join('');
+    seccionCampana.classList.remove('hidden');
+  }
+
+  if (stage === 'imagen' && status === 'start') {
+    placasEl.insertAdjacentHTML('beforeend', esqueletoPlaca(data.tipo, data.index));
+    const placa = document.getElementById(`placa-${data.index}`);
+    const titulo = placa.querySelector('.skel-titulo');
+    titulo.textContent = data.titulo;
+    titulo.className = 'font-semibold text-sm';
+  }
+
+  if (stage === 'imagen' && status === 'done') {
+    const placa = document.getElementById(`placa-${data.index}`);
+    if (!placa) return;
+    const img = placa.querySelector('.skeleton');
+    if (img) img.outerHTML = `<img src="${data.image_url}" alt="Placa publicitaria" class="aspect-square w-full object-cover">`;
+  }
+
+  if (stage === 'completo' && status === 'done') {
+    data.placas.forEach((p, i) => {
+      const placa = document.getElementById(`placa-${i}`);
+      if (!placa) return;
+      const copyEl = placa.querySelector('.skel-copy');
+      if (copyEl) {
+        copyEl.outerHTML = `<p class="text-xs text-slate-400 mt-2 leading-relaxed flex-1">${p.copy}</p>
+          <button class="btn-press btn-copiar-copy mt-3 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5 self-start">📋 Copiar copy</button>`;
+        placa.querySelector('.btn-copiar-copy').addEventListener('click', (e) => copiarTexto(p.copy, e.target));
+      }
+    });
+  }
+
+  if (stage === 'error') {
+    formError.textContent = data?.mensaje || mensaje || 'Ocurrió un error durante la generación.';
+    formError.classList.remove('hidden');
+  }
+}
+
+document.getElementById('btn-copiar-hashtags').addEventListener('click', (e) => {
+  const texto = [...hashtagsEl.querySelectorAll('span')].map(s => s.textContent).join(' ');
+  copiarTexto(texto, e.target);
+});
+
+form.addEventListener('submit', manejarEnvio);
+</script>
 </body>
 </html>
