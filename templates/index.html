@@ -1,93 +1,133 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Studio - Dashboard Publicitario</title>
+    <title>AdVance AI - Studio Publicitario HD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #090d16; }
-        .bg-glow { background: radial-gradient(circle at 50% 0%, rgba(120, 80, 255, 0.15) 0%, rgba(9, 13, 22, 1) 70%); }
-        .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .glass-input { background: rgba(10, 15, 26, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .glass-input:focus { border-color: #8b5cf6; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
-        .skeleton { background: linear-gradient(90deg, #111827 25%, #1f2937 50%, #111827 75%); background-size: 200% 100%; animation: pulse-glow 1.5s infinite; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #05070B; color: #F3F4F6; }
+        .bg-glow { background: radial-gradient(circle at 50% -10%, rgba(139, 92, 246, 0.2) 0%, rgba(5, 7, 11, 1) 75%); }
+        .glass-card { background: rgba(14, 19, 31, 0.75); backdrop-filter: blur(20px); border: 1px solid rgba(139, 92, 246, 0.18); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); }
+        .glass-input { background: rgba(8, 12, 20, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); color: #F9FAFB; }
+        .glass-input:focus { border-color: #8B5CF6; box-shadow: 0 0 20px rgba(139, 92, 246, 0.35); }
+        .neon-border { border: 1px solid rgba(168, 85, 247, 0.4); box-shadow: 0 0 15px rgba(168, 85, 247, 0.15); }
+        .skeleton-loader { background: linear-gradient(90deg, #0e131f 25%, #1a2235 50%, #0e131f 75%); background-size: 200% 100%; animation: pulse-glow 1.6s infinite ease-in-out; }
         @keyframes pulse-glow { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen bg-glow antialiased selection:bg-purple-500 selection:text-white">
+<body class="bg-glow min-h-screen antialiased selection:bg-purple-600 selection:text-white">
 
-    <div class="max-w-6xl mx-auto px-4 py-10">
-        <!-- Header Elegante -->
-        <header class="text-center mb-12">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold uppercase tracking-widest mb-4">
-                <span>✨ AI Marketing Platform</span>
+    <div class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold uppercase tracking-widest mb-4 shadow-sm">
+                <span>✨ AD VANCE AI • NEXT-GEN MARKETING</span>
             </div>
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-3">
-                Estrategia & Carruseles HD
+            <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight mb-3">
+                AdVance <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-violet-400 to-indigo-400">AI</span>
             </h1>
-            <p class="text-slate-400 text-base max-w-xl mx-auto">
-                Genera inteligencia competitiva e imágenes comerciales ultra nítidas adaptadas a la identidad de tu marca.
+            <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto font-medium">
+                Auditoría competitiva, matriz FODA y creación de carruseles publicitarios HD.
             </p>
         </header>
 
-        <!-- Formulario Principal -->
-        <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl mb-10">
+        <!-- Formulario -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 neon-border mb-10">
             <form id="analyzeForm" enctype="multipart/form-data" class="space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Tu Negocio (URL o Nombre)</label>
-                        <input type="text" name="business_url" required placeholder="ej. Jabones Artesanales Natura" class="w-full glass-input rounded-2xl px-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition">
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Tu Negocio (URL o Nombre)</label>
+                        <input type="text" name="business_url" required placeholder="ej. https://instagram.com/tu_marca" class="w-full glass-input rounded-2xl px-4 py-3.5 text-sm focus:outline-none transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Competidor (URL o Nombre)</label>
-                        <input type="text" name="competitor_url" required placeholder="ej. MarcaCompetidora.com" class="w-full glass-input rounded-2xl px-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition">
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Competidor (URL o Nombre)</label>
+                        <input type="text" name="competitor_url" required placeholder="ej. https://instagram.com/competencia" class="w-full glass-input rounded-2xl px-4 py-3.5 text-sm focus:outline-none transition">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Enfoque / Ángulo (Opcional)</label>
-                        <input type="text" name="angulo" placeholder="ej. Educativo, Oferta Especial, Comparativa..." class="w-full glass-input rounded-2xl px-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition">
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Enfoque / Ángulo (Opcional)</label>
+                        <input type="text" name="angulo" placeholder="ej. Educativo, Oferta, Comparativa..." class="w-full glass-input rounded-2xl px-4 py-3.5 text-sm focus:outline-none transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">📸 Fotos de tu Producto (Opcional)</label>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">📸 Fotos del Producto (Opcional)</label>
                         <input type="file" name="images" multiple accept="image/*" class="w-full glass-input rounded-2xl px-3 py-2 text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-purple-600 file:text-white file:font-semibold hover:file:bg-purple-500 cursor-pointer transition">
                     </div>
                 </div>
 
-                <button type="submit" id="btnSubmit" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 rounded-2xl transition shadow-lg shadow-purple-900/30 flex items-center justify-center gap-3 text-sm tracking-wide">
-                    <span>⚡ Generar Análisis y Carrusel HD</span>
+                <button type="submit" id="btnSubmit" class="w-full bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold py-4 rounded-2xl transition-all shadow-lg shadow-purple-900/40 flex items-center justify-center gap-3 text-sm tracking-wide">
+                    <span>⚡ GENERAR ANÁLISIS Y CARRUSEL HD</span>
                 </button>
             </form>
         </div>
 
-        <!-- Feedback / Status Loader -->
-        <div id="statusContainer" class="hidden glass-card rounded-2xl p-5 mb-10 border-purple-500/30">
+        <!-- Status Stream Loader -->
+        <div id="statusContainer" class="hidden glass-card rounded-2xl p-5 mb-10 border-purple-500/40">
             <div class="flex items-center gap-4">
-                <div class="relative flex h-3 w-3">
+                <div class="relative flex h-3.5 w-3.5">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                  <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-purple-500"></span>
                 </div>
-                <p id="statusText" class="text-purple-300 text-sm font-medium">Iniciando procesamiento...</p>
+                <p id="statusText" class="text-purple-300 text-sm font-semibold tracking-wide">Iniciando motor AdVance AI...</p>
             </div>
         </div>
 
         <!-- Dashboard Result -->
         <div id="dashboard" class="hidden space-y-10">
-            <!-- Resumen Estratégico -->
+            <!-- Header Resumen Estratégico -->
             <div class="glass-card rounded-3xl p-6 sm:p-8">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 id="campaignTitle" class="text-2xl font-extrabold text-white">Estrategia Publicitaria</h2>
-                    <span id="scoreBadge" class="bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold px-3 py-1.5 rounded-full">Score: --/100</span>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-800">
+                    <div>
+                        <span class="text-xs font-extrabold text-purple-400 uppercase tracking-widest">Estrategia Generada</span>
+                        <h2 id="campaignTitle" class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Campaña</h2>
+                    </div>
+                    <div id="scoreBadge" class="self-start sm:self-auto bg-purple-500/15 border border-purple-500/40 text-purple-300 text-xs font-extrabold px-4 py-2 rounded-full shadow-inner">
+                        Score Competencia: --/100
+                    </div>
                 </div>
-                <div id="dashboardData" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-300"></div>
+
+                <!-- Métricas Comparativas -->
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">📊 Comparativa Tu Marca vs Competidor</h3>
+                <div id="metricsGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"></div>
+
+                <!-- Matriz FODA Cruzada -->
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">⚔️ Matriz FODA y Oportunidades de Ataque</h3>
+                <div id="swotGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8"></div>
+
+                <!-- Plan Semanal y Consejos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800/80">
+                        <h4 class="font-bold text-white text-sm mb-3 flex items-center gap-2">
+                            <span>📅 Plan de Contenido Semanal</span>
+                        </h4>
+                        <div id="weeklyPlan" class="space-y-3 text-xs text-slate-300"></div>
+                    </div>
+                    <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800/80 flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-white text-sm mb-3 flex items-center gap-2">
+                                <span>💡 Recomendaciones Clave</span>
+                            </h4>
+                            <ul id="recommendationsList" class="list-disc list-inside space-y-1.5 text-xs text-slate-300"></ul>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-800/60">
+                            <h5 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hashtags Sugeridos</h5>
+                            <p id="hashtagsText" class="text-xs text-purple-400 font-semibold"></p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Carrusel de Placas -->
+            <!-- Carrusel de Placas HD -->
             <div>
-                <h3 class="text-xl font-extrabold text-white mb-6">Placas del Carrusel Publicitario</h3>
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-2xl font-extrabold text-white">Placas del Carrusel Publicitario</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Generación secuencial HD de alta resolución</p>
+                    </div>
+                </div>
                 <div id="carouselContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5"></div>
             </div>
         </div>
@@ -99,9 +139,13 @@
         const statusText = document.getElementById('statusText');
         const dashboard = document.getElementById('dashboard');
         const carouselContainer = document.getElementById('carouselContainer');
-        const dashboardData = document.getElementById('dashboardData');
         const campaignTitle = document.getElementById('campaignTitle');
         const scoreBadge = document.getElementById('scoreBadge');
+        const metricsGrid = document.getElementById('metricsGrid');
+        const swotGrid = document.getElementById('swotGrid');
+        const weeklyPlan = document.getElementById('weeklyPlan');
+        const recommendationsList = document.getElementById('recommendationsList');
+        const hashtagsText = document.getElementById('hashtagsText');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -110,7 +154,7 @@
             statusContainer.classList.remove('hidden');
             dashboard.classList.add('hidden');
             carouselContainer.innerHTML = '';
-            statusText.innerText = 'Conectando con el motor de IA...';
+            statusText.innerText = 'Conectando con el motor AdVance AI...';
 
             try {
                 const response = await fetch('/api/analyze', {
@@ -136,33 +180,70 @@
 
                                 if (json.stage === 'estrategia' && json.status === 'done') {
                                     dashboard.classList.remove('hidden');
-                                    campaignTitle.innerText = json.data.nombre_campana;
-                                    scoreBadge.innerText = `Score Competencia: ${json.data.score_competencia}/100`;
-                                    
-                                    dashboardData.innerHTML = `
-                                        <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                                            <h4 class="font-bold text-white mb-2">💡 Recomendaciones Clave</h4>
-                                            <ul class="list-disc list-inside space-y-1 text-xs text-slate-400">
-                                                ${json.data.recomendaciones_clave.map(r => `<li>${r}</li>`).join('')}
-                                            </ul>
+                                    const data = json.data;
+
+                                    campaignTitle.innerText = data.nombre_campana;
+                                    scoreBadge.innerText = `Score Competencia: ${data.score_competencia}/100`;
+
+                                    // Métricas
+                                    const m = data.metricas_comparativas;
+                                    metricsGrid.innerHTML = `
+                                        <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center">
+                                            <span class="text-[11px] font-bold text-slate-400 uppercase">Engagement Rate</span>
+                                            <div class="text-sm font-extrabold text-white mt-1">Tú: ${m.engagement.tu_negocio}% vs Rival: ${m.engagement.competencia}%</div>
                                         </div>
-                                        <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                                            <h4 class="font-bold text-white mb-2">🏷️ Hashtags Sugeridos</h4>
-                                            <p class="text-xs text-purple-400 font-medium">${json.data.hashtags.join(' ')}</p>
+                                        <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center">
+                                            <span class="text-[11px] font-bold text-slate-400 uppercase">Calidad Visual</span>
+                                            <div class="text-sm font-extrabold text-white mt-1">Tú: ${m.calidad_contenido}/10 vs Rival: ${m.calidad_contenido.competencia || m.calidad_contenido}/10</div>
+                                        </div>
+                                        <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center">
+                                            <span class="text-[11px] font-bold text-slate-400 uppercase">Frecuencia Semanal</span>
+                                            <div class="text-sm font-extrabold text-white mt-1">Tú: ${m.frecuencia.tu_negocio} posts vs Rival: ${m.frecuencia.competencia} posts</div>
                                         </div>
                                     `;
+
+                                    // FODA
+                                    const sw = data.matriz_swot;
+                                    swotGrid.innerHTML = `
+                                        <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                                            <h4 class="font-bold text-emerald-400 text-xs uppercase tracking-wider">🟢 Debilidades del Rival (Tus Ventajas)</h4>
+                                            <ul class="list-disc list-inside text-xs text-slate-300 space-y-1">
+                                                ${sw.puntos_debiles_rival.map(p => `<li>${p}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                        <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                                            <h4 class="font-bold text-purple-400 text-xs uppercase tracking-wider">⚔️ Estrategia de Ataque Comercial</h4>
+                                            <ul class="list-disc list-inside text-xs text-slate-300 space-y-1">
+                                                ${sw.estrategia_ataque.map(e => `<li>${e}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    `;
+
+                                    // Plan Semanal
+                                    const p = data.plan_semanal;
+                                    weeklyPlan.innerHTML = `
+                                        <p><strong>Lunes:</strong> ${p.lunes.idea} <em>(${p.lunes.objetivo})</em></p>
+                                        <p><strong>Miércoles:</strong> ${p.miercoles.idea} <em>(${p.miercoles.objetivo})</em></p>
+                                        <p><strong>Viernes:</strong> ${p.viernes.idea} <em>(${p.viernes.objetivo})</em></p>
+                                    `;
+
+                                    // Recomendaciones y Hashtags
+                                    recommendationsList.innerHTML = data.recomendaciones_clave.map(r => `<li>${r}</li>`).join('');
+                                    hashtagsText.innerText = data.hashtags.join(' ');
                                 }
 
                                 if (json.stage === 'imagen' && json.status === 'start') {
                                     const card = document.createElement('div');
                                     card.id = `card-${json.data.index}`;
-                                    card.className = 'glass-card rounded-2xl overflow-hidden flex flex-col justify-between h-[380px] relative transition hover:border-purple-500/50';
+                                    card.className = 'glass-card rounded-2xl overflow-hidden flex flex-col justify-between h-[400px] relative transition hover:border-purple-500/50';
                                     card.innerHTML = `
-                                        <div class="absolute inset-0 skeleton flex items-center justify-center p-4 text-center text-xs text-slate-400 font-medium">
-                                            ✨ Renderizando fondo HD...
+                                        <div class="absolute inset-0 skeleton-loader flex flex-col items-center justify-center p-4 text-center">
+                                            <div class="animate-spin rounded-full h-7 w-7 border-b-2 border-purple-400 mb-2"></div>
+                                            <span class="text-xs text-purple-300 font-semibold">Generando carrusel...</span>
+                                            <span class="text-[10px] text-slate-400 mt-1">Placa ${json.data.index + 1} de ${json.data.total}</span>
                                         </div>
-                                        <div class="relative z-10 p-5 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent h-full flex flex-col justify-between">
-                                            <span class="inline-block self-start px-2.5 py-1 rounded-lg bg-purple-500/30 border border-purple-400/30 text-[10px] font-bold text-purple-300 uppercase tracking-wider">${json.data.tipo}</span>
+                                        <div class="relative z-10 p-5 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent h-full flex flex-col justify-between">
+                                            <span class="inline-block self-start px-2.5 py-1 rounded-lg bg-purple-500/30 border border-purple-400/40 text-[10px] font-bold text-purple-300 uppercase tracking-wider">${json.data.tipo}</span>
                                             <div>
                                                 <h4 class="font-bold text-white text-sm mb-1.5 leading-snug">${json.data.titulo}</h4>
                                                 <p class="text-xs text-slate-300 leading-relaxed line-clamp-4">${json.data.descripcion}</p>
@@ -178,8 +259,8 @@
                                         card.style.backgroundImage = `url('${json.data.image_url}')`;
                                         card.style.backgroundSize = 'cover';
                                         card.style.backgroundPosition = 'center';
-                                        const skeleton = card.querySelector('.skeleton');
-                                        if (skeleton) skeleton.remove();
+                                        const loader = card.querySelector('.skeleton-loader');
+                                        if (loader) loader.remove();
                                     }
                                 }
 
@@ -191,7 +272,7 @@
                     }
                 }
             } catch (err) {
-                statusText.innerText = '⚠️ Error en la conexión. Reintenta.';
+                statusText.innerText = '⚠️ Error de comunicación. Intenta nuevamente.';
             }
         });
     </script>

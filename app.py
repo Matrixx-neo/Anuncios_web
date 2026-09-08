@@ -1,6 +1,6 @@
 """
-SaaS Marketing & Ad Carousel Generator - AI Engine
-=================================================
+AdVance AI - SaaS Marketing & Ad Carousel Generator
+===================================================
 """
 
 import asyncio
@@ -24,7 +24,7 @@ from PIL import Image
 import io
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("app")
+log = logging.getLogger("advance_ai")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
@@ -34,7 +34,7 @@ POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-app = FastAPI(title="AI Marketing Studio")
+app = FastAPI(title="AdVance AI Studio")
 templates = Jinja2Templates(directory="templates")
 
 HEADERS = {
@@ -86,12 +86,21 @@ def scrape_url(raw_url: str) -> dict:
             marca = title or extract_brand_from_url(url)
             content = f"Título: {marca}\nDescripción: {description}\nContenido: {body_text}".strip()[:4000]
             return {"url": url, "title": marca, "content": content, "scraped": True}
-    except Exception as exc:
+    except Exception:
         marca = extract_brand_from_url(url)
         return {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
 
-_METRICA = {"type": "object", "properties": {"tu_negocio": {"type": "integer"}, "competencia": {"type": "integer"}}, "required": ["tu_negocio", "competencia"]}
-_DIA_PLAN = {"type": "object", "properties": {"idea": {"type": "string"}, "objetivo": {"type": "string"}}, "required": ["idea", "objetivo"]}
+_METRICA = {
+    "type": "object",
+    "properties": {"tu_negocio": {"type": "integer"}, "competencia": {"type": "integer"}},
+    "required": ["tu_negocio", "competencia"]
+}
+
+_DIA_PLAN = {
+    "type": "object",
+    "properties": {"idea": {"type": "string"}, "objetivo": {"type": "string"}},
+    "required": ["idea", "objetivo"]
+}
 
 CAMPAIGN_SCHEMA = {
     "type": "object",
@@ -100,18 +109,32 @@ CAMPAIGN_SCHEMA = {
         "score_competencia": {"type": "integer"},
         "metricas_comparativas": {
             "type": "object",
-            "properties": {"engagement": _METRICA, "calidad_contenido": _METRICA, "frecuencia": _METRICA},
-            "required": ["engagement", "calidad_contenido", "frecuencia"],
+            "properties": {
+                "engagement": _METRICA,
+                "calidad_contenido": _METRICA,
+                "frecuencia": _METRICA
+            },
+            "required": ["engagement", "calidad_contenido", "frecuencia"]
         },
         "matriz_swot": {
             "type": "object",
-            "properties": {"fortalezas_rival": {"type": "array", "items": {"type": "string"}}, "puntos_debiles_rival": {"type": "array", "items": {"type": "string"}}},
-            "required": ["fortalezas_rival", "puntos_debiles_rival"],
+            "properties": {
+                "fortalezas_propias": {"type": "array", "items": {"type": "string"}},
+                "debilidades_propias": {"type": "array", "items": {"type": "string"}},
+                "fortalezas_rival": {"type": "array", "items": {"type": "string"}},
+                "puntos_debiles_rival": {"type": "array", "items": {"type": "string"}},
+                "estrategia_ataque": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["fortalezas_propias", "debilidades_propias", "fortalezas_rival", "puntos_debiles_rival", "estrategia_ataque"]
         },
         "plan_semanal": {
             "type": "object",
-            "properties": {"lunes": _DIA_PLAN, "miercoles": _DIA_PLAN, "viernes": _DIA_PLAN},
-            "required": ["lunes", "miercoles", "viernes"],
+            "properties": {
+                "lunes": _DIA_PLAN,
+                "miercoles": _DIA_PLAN,
+                "viernes": _DIA_PLAN
+            },
+            "required": ["lunes", "miercoles", "viernes"]
         },
         "recomendaciones_clave": {"type": "array", "items": {"type": "string"}},
         "hashtags": {"type": "array", "items": {"type": "string"}},
@@ -123,13 +146,17 @@ CAMPAIGN_SCHEMA = {
                     "tipo": {"type": "string", "enum": ["Gancho", "Problema", "Solucion", "Beneficios", "CTA"]},
                     "titulo": {"type": "string"},
                     "descripcion": {"type": "string"},
-                    "image_prompt": {"type": "string"},
+                    "image_prompt": {"type": "string"}
                 },
-                "required": ["tipo", "titulo", "descripcion", "image_prompt"],
-            },
-        },
+                "required": ["tipo", "titulo", "descripcion", "image_prompt"]
+            }
+        }
     },
-    "required": ["nombre_campana", "score_competencia", "metricas_comparativas", "matriz_swot", "plan_semanal", "recomendaciones_clave", "hashtags", "carrusel_placas"],
+    "required": [
+        "nombre_campana", "score_competencia", "metricas_comparativas", 
+        "matriz_swot", "plan_semanal", "recomendaciones_clave", 
+        "hashtags", "carrusel_placas"
+    ]
 }
 
 def optimize_image(image_bytes: bytes) -> Image.Image:
@@ -141,26 +168,26 @@ def optimize_image(image_bytes: bytes) -> Image.Image:
 
 def generate_campaign(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
     if not GEMINI_API_KEY:
-        raise RuntimeError("Falta GEMINI_API_KEY en variables de entorno")
+        raise RuntimeError("Falta GEMINI_API_KEY en las variables de entorno de Render")
 
-    linea_angulo = f"Enfoque solicitado: '{angulo}'." if angulo else "Enfoque publicitario equilibrado y de alto impacto."
-    
-    prompt = f"""Eres un director creativo publicitario de nivel mundial.
+    linea_angulo = f"Enfoque solicitado: '{angulo}'." if angulo else "Enfoque publicitario comercial de alto impacto."
 
-NEGOCIO PROPIO ({business['url']}):
+    prompt = f"""Eres el estratega creativo y CMO de AdVance AI.
+
+TU NEGOCIO ({business['url']}):
 {business['content']}
 
-COMPETIDOR ({competitor['url']}):
+COMPETIDOR DIRECTO ({competitor['url']}):
 {competitor['content']}
 
 {linea_angulo}
 
-REGLAS STRICTAS PARA IMÁGENES:
-- Identifica el producto o servicio exacto comercializado.
-- Si hay fotos adjuntas del producto, analiza sus texturas, empaque y colores para mantener coherencia de marca.
-- Cada 'image_prompt' debe estar en INGLÉS y mencionar explícitamente el nombre del producto/rubro exacto. Jamás temas genéricos ajenos.
-- Estilo: 'Professional product photography, sharp focus, 8k resolution, studio soft lighting, hyper-realistic, pristine detail'.
-- Sin texto ni letras en la imagen.
+INSTRUCCIONES CLAVE:
+1. Realiza una auditoría comparativa profunda (Métricas, FODA cruzado y oportunidades tácticas).
+2. Diseña un plan de contenido semanal ejecutable (Lunes, Miércoles y Viernes).
+3. Si hay imágenes adjuntas del producto, analiza su empaque y colores para mantener coherencia estética.
+4. Genera un carrusel estratégico de EXACTAMENTE 5 placas (Gancho, Problema, Solución, Beneficios, CTA).
+5. Cada 'image_prompt' DEBE estar en INGLÉS y especificar claramente el producto/rubro real en estilo fotográfico comercial: 'Professional product photography, sharp focus, 8k resolution, studio soft lighting, pristine detail'. Sin textos ni letras dentro de la imagen.
 """
 
     model = genai.GenerativeModel(GEMINI_MODEL)
@@ -180,7 +207,7 @@ REGLAS STRICTAS PARA IMÁGENES:
 
 def build_pollinations_url(prompt: str, fallback_text: str = "product") -> str:
     base_prompt = (prompt or fallback_text).strip()
-    hd_prompt = f"{base_prompt}, sharp focus, 8k resolution, ultra detailed, professional studio shot"
+    hd_prompt = f"{base_prompt}, high resolution, ultra detailed 8k, professional studio product shot, cinematic lighting"
     encoded = urllib.parse.quote(hd_prompt)
     seed = random.randint(1, 999_999)
     return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=1080&height=1350&nologo=true&enhance=true&quality=100&seed={seed}"
@@ -202,13 +229,13 @@ async def analyze(
 
     async def event_stream():
         try:
-            yield sse("scraping", "start", "🔍 Analizando marca y mercado...")
+            yield sse("scraping", "start", "🔍 Escaneando perfiles y extrayendo ventajas competitivas...")
             business = await run_in_threadpool(scrape_url, business_url)
             competitor = await run_in_threadpool(scrape_url, competitor_url)
 
             pil_images = []
             if images:
-                yield sse("scraping", "progress", "📸 Optimizando imágenes cargadas...")
+                yield sse("scraping", "progress", "📸 Procesando y optimizando fotos del producto...")
                 for img in images:
                     if img.content_type and img.content_type.startswith("image/"):
                         contents = await img.read()
@@ -216,24 +243,16 @@ async def analyze(
                             optimized_img = await run_in_threadpool(optimize_image, contents)
                             pil_images.append(optimized_img)
 
-            yield sse("scraping", "done", "🔍 Información procesada con éxito.")
+            yield sse("scraping", "done", "🔍 Análisis de datos inicial completado.")
 
-            yield sse("estrategia", "start", "🧠 Generando estrategia y conceptos de carrusel HD...")
+            yield sse("estrategia", "start", "🧠 Generando matriz FODA, métricas y guión de carrusel HD...")
             campana = await run_in_threadpool(generate_campaign, business, competitor, angulo, pil_images)
 
             yield sse(
                 "estrategia",
                 "done",
-                "🧠 Estrategia completada.",
-                {
-                    "nombre_campana": campana["nombre_campana"],
-                    "score_competencia": campana["score_competencia"],
-                    "metricas_comparativas": campana["metricas_comparativas"],
-                    "matriz_swot": campana["matriz_swot"],
-                    "plan_semanal": campana["plan_semanal"],
-                    "recomendaciones_clave": campana["recomendaciones_clave"],
-                    "hashtags": campana["hashtags"],
-                },
+                "📊 Auditoría estratégica lista.",
+                campana
             )
 
             total = len(campana["carrusel_placas"])
@@ -241,35 +260,40 @@ async def analyze(
                 yield sse(
                     "imagen",
                     "start",
-                    f"🎨 Diseñando placa visual {i + 1}/{total}...",
+                    f"🎨 Diseñando placa HD {i + 1}/{total}...",
                     {
                         "index": i,
                         "total": total,
                         "tipo": placa["tipo"],
                         "titulo": placa["titulo"],
-                        "descripcion": placa["descripcion"],
-                    },
+                        "descripcion": placa["descripcion"]
+                    }
                 )
-                await asyncio.sleep(0.1)
+
+                # Generación secuencial diferida para evitar sobrecargar Pollinations
                 image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
+                
+                # Pausa estratégica para dar estabilidad al API visual
+                await asyncio.sleep(1.5)
+
                 yield sse(
                     "imagen",
                     "done",
-                    f"🎨 Placa {i + 1}/{total} lista.",
-                    {"index": i, "image_url": image_url},
+                    f"✨ Placa {i + 1}/{total} renderizada con éxito.",
+                    {"index": i, "image_url": image_url}
                 )
 
-            yield sse("completo", "done", "✨ Proceso finalizado con éxito.", {"nombre_campana": campana["nombre_campana"]})
+            yield sse("completo", "done", "🚀 Estrategia y carrusel HD listos.", {"nombre_campana": campana["nombre_campana"]})
 
         except Exception as exc:
-            log.exception("Error en pipeline")
+            log.exception("Error en pipeline AdVance AI")
             yield sse("error", "error", f"⚠️ Error: {str(exc)}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "gemini_configurado": bool(GEMINI_API_KEY)}
+    return {"status": "ok", "app": "AdVance AI", "gemini_configurado": bool(GEMINI_API_KEY)}
 
 if __name__ == "__main__":
     import uvicorn
