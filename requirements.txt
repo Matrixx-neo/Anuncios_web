@@ -1,12 +1,8 @@
 fastapi
-uvicorn[standard]
+uvicorn
 jinja2
-python-multipart
-requests
-google-genai
-fal-client
 google-generativeai
+fal-client
+httpx
 beautifulsoup4
-requests
-jinja2
-python-multipart
+pydantic
