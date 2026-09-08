@@ -1,4 +1,3 @@
-cat << 'EOF' > app.py
 import os
 import json
 import asyncio
@@ -197,4 +196,3 @@ async def health():
         "gemini_configurado": bool(GEMINI_API_KEY),
         "fal_configurado": bool(FAL_KEY)
     }
-EOF
