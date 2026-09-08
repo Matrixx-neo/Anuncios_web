@@ -138,9 +138,10 @@ def generate_image(prompt: str) -> str:
         raise RuntimeError("Fal.ai no devolvió ninguna imagen")
     return images[0]["url"]
 
-@app.get("/", response_class=HTMLResponse)
+    @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
+
 
 @app.post("/generar")
 async def generar_form(request: Request, producto: str = Form(...), descripcion: str = Form(...)):
