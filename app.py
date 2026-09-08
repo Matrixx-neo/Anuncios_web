@@ -29,7 +29,7 @@ import google.generativeai as genai
 import httpx
 from bs4 import BeautifulSoup
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
@@ -284,9 +284,9 @@ def generate_image(prompt: str, fallback_text: str) -> str:
 # --------------------------------------------------------------------------------------
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 @app.post("/api/analyze")
