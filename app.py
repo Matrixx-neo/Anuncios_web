@@ -26,10 +26,12 @@ import io
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("advance_ai")
 
-# MANEJO MULTI-KEY Y FALLBACK DE MODELO
+# MANEJO MULTI-KEY Y MODELOS VÁLIDOS V1BETA
 RAW_KEYS = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
 API_KEYS = [k.strip() for k in RAW_KEYS.split(",") if k.strip()]
-DEFAULT_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash"]
+
+# Modelos vigentes confirmados
+VALID_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
 
 SCRAPE_TIMEOUT = 2.0
 POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
@@ -180,7 +182,7 @@ def optimize_image(image_bytes: bytes) -> Image.Image:
 
 def generate_campaign_with_fallback(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
     if not API_KEYS:
-        raise RuntimeError("No hay GEMINI_API_KEYS configuradas.")
+        raise RuntimeError("No hay GEMINI_API_KEYS configuradas en el entorno.")
 
     linea_angulo = f"Enfoque estratégico: '{angulo}'." if angulo else "Enfoque publicitario comercial de alto impacto."
 
@@ -201,11 +203,11 @@ INSTRUCCIONES DE PROMPTS DE IMAGEN:
 """
 
     last_error = None
-    for api_key in API_KEYS:
+    for idx, api_key in enumerate(API_KEYS):
         genai.configure(api_key=api_key)
-        for model_name in DEFAULT_MODELS:
+        for model_name in VALID_MODELS:
             try:
-                log.info(f"Probando con modelo {model_name}...")
+                log.info(f"Intentando llamada con Key #{idx+1} y modelo '{model_name}'...")
                 model = genai.GenerativeModel(model_name)
                 contents = [prompt]
                 if image_pil_list:
@@ -221,11 +223,17 @@ INSTRUCCIONES DE PROMPTS DE IMAGEN:
                 )
                 return json.loads(response.text)
             except Exception as e:
-                log.warning(f"Fallo en {model_name} con key actual: {str(e)}")
+                err_str = str(e)
+                log.warning(f"Error en Key #{idx+1} con {model_name}: {err_str}")
                 last_error = e
-                continue
+                # Si el modelo no existe (404), pasar inmediatamente al siguiente modelo
+                if "404" in err_str:
+                    continue
+                # Si es cuota agotada (429), la key está agotada: romper bucle de modelos y saltar a la siguiente KEY de inmediato
+                if "429" in err_str:
+                    break
 
-    raise RuntimeError(f"Todas las API Keys y modelos agotaron cuota. Último error: {str(last_error)}")
+    raise RuntimeError(f"Todas las API Keys de la lista están agotadas o inválidas. Detalle: {str(last_error)}")
 
 def build_pollinations_url(prompt: str) -> str:
     clean_prompt = f"Professional product shot, {prompt}, 8k, photorealistic"
