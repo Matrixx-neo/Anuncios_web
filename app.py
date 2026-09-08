@@ -26,16 +26,15 @@ import io
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("advance_ai")
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+# MANEJO MULTI-KEY Y FALLBACK DE MODELO
+RAW_KEYS = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
+API_KEYS = [k.strip() for k in RAW_KEYS.split(",") if k.strip()]
+DEFAULT_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash"]
+
 SCRAPE_TIMEOUT = 2.0
 POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
 
-# CACHÉ EN MEMORIA PARA SCRAPING
 SCRAPE_CACHE: Dict[str, dict] = {}
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 app = FastAPI(title="AdVance AI Studio")
 templates = Jinja2Templates(directory="templates")
@@ -179,9 +178,9 @@ def optimize_image(image_bytes: bytes) -> Image.Image:
     img.thumbnail((1024, 1024))
     return img
 
-def generate_campaign(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
-    if not GEMINI_API_KEY:
-        raise RuntimeError("Falta GEMINI_API_KEY en el entorno")
+def generate_campaign_with_fallback(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
+    if not API_KEYS:
+        raise RuntimeError("No hay GEMINI_API_KEYS configuradas.")
 
     linea_angulo = f"Enfoque estratégico: '{angulo}'." if angulo else "Enfoque publicitario comercial de alto impacto."
 
@@ -198,23 +197,35 @@ COMPETIDOR DIRECTO ({competitor['url']}):
 INSTRUCCIONES DE PROMPTS DE IMAGEN:
 1. Diseña 5 'image_prompt' breves pero potentes en INGLÉS.
 2. Formato: 'Commercial photo of [PRODUCTO/CONCEPTO], studio lighting, 8k resolution, photorealistic, sharp focus, vibrant colors, premium packaging'.
-3. IMPORTANTE: Limita cada image_prompt a máximo 30 palabras para garantizar respuesta rápida del motor gráfico.
+3. Limita cada image_prompt a máximo 30 palabras.
 """
 
-    model = genai.GenerativeModel(GEMINI_MODEL)
-    contents = [prompt]
-    if image_pil_list:
-        contents.extend(image_pil_list)
+    last_error = None
+    for api_key in API_KEYS:
+        genai.configure(api_key=api_key)
+        for model_name in DEFAULT_MODELS:
+            try:
+                log.info(f"Probando con modelo {model_name}...")
+                model = genai.GenerativeModel(model_name)
+                contents = [prompt]
+                if image_pil_list:
+                    contents.extend(image_pil_list)
 
-    response = model.generate_content(
-        contents,
-        generation_config={
-            "response_mime_type": "application/json",
-            "response_schema": CAMPAIGN_SCHEMA,
-            "temperature": 0.7,
-        },
-    )
-    return json.loads(response.text)
+                response = model.generate_content(
+                    contents,
+                    generation_config={
+                        "response_mime_type": "application/json",
+                        "response_schema": CAMPAIGN_SCHEMA,
+                        "temperature": 0.7,
+                    },
+                )
+                return json.loads(response.text)
+            except Exception as e:
+                log.warning(f"Fallo en {model_name} con key actual: {str(e)}")
+                last_error = e
+                continue
+
+    raise RuntimeError(f"Todas las API Keys y modelos agotaron cuota. Último error: {str(last_error)}")
 
 def build_pollinations_url(prompt: str) -> str:
     clean_prompt = f"Professional product shot, {prompt}, 8k, photorealistic"
@@ -256,7 +267,7 @@ async def analyze(
                             pil_images.append(optimized_img)
 
             yield sse("estrategia", "start", "🧠 Generando estrategia y carrusel...")
-            campana = await run_in_threadpool(generate_campaign, business, competitor, angulo, pil_images)
+            campana = await run_in_threadpool(generate_campaign_with_fallback, business, competitor, angulo, pil_images)
 
             yield sse("estrategia", "done", "📊 ¡Dashboard generado!", campana)
 
