@@ -1,20 +1,6 @@
 """
 AdGenius - Dashboard SaaS de publicidad e inteligencia competitiva con IA
 ========================================================================
-
-Instalación:
-    pip install fastapi "uvicorn[standard]" httpx beautifulsoup4 jinja2 google-generativeai python-multipart
-
-Variables de entorno (Render -> Environment):
-    GEMINI_API_KEY      -> clave de Google AI Studio
-    GEMINI_MODEL        -> por defecto "gemini-2.5-flash"
-
-Las imágenes se generan con Pollinations.ai (modelo Flux), sin API key ni costo.
-
-Ejecutar local:
-    python app.py
-Render (Start Command):
-    uvicorn app:app --host 0.0.0.0 --port $PORT
 """
 
 import asyncio
@@ -23,18 +9,19 @@ import logging
 import os
 import random
 import urllib.parse
-from typing import Optional
+from typing import List, Optional
 from urllib.parse import urlparse
 
 import google.generativeai as genai
 import httpx
 from bs4 import BeautifulSoup
-from fastapi import FastAPI
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
-from pydantic import BaseModel, Field
+from PIL import Image
+import io
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("adgenius")
@@ -45,7 +32,7 @@ log = logging.getLogger("adgenius")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-SCRAPE_TIMEOUT = 4.0  # segundos, estricto - nunca debe congelar la app
+SCRAPE_TIMEOUT = 4.0
 POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
 
 if GEMINI_API_KEY:
@@ -63,20 +50,11 @@ HEADERS = {
 
 SOCIAL_DOMAINS = ("instagram.com", "tiktok.com", "facebook.com", "twitter.com", "x.com")
 
-
-class AnalyzeRequest(BaseModel):
-    business_url: str = Field(..., description="URL o handle del negocio propio")
-    competitor_url: str = Field(..., description="URL o nombre del competidor")
-    angulo: Optional[str] = Field(default=None, description="Enfoque opcional: Educativo, Oferta Agresiva, Comparativa, Emocional, Urgencia...")
-
-
 # -----------------------------------------------------------------------------
-# Módulo Scraper - robusto, con timeout estricto y fallback suave por marca
+# Módulo Scraper
 # -----------------------------------------------------------------------------
 
 def extract_brand_from_url(raw_url: str) -> str:
-    """Deriva un nombre de marca legible directamente de la URL, sin red.
-    Se usa como fallback cuando el scraping falla o la red social bloquea el acceso."""
     try:
         url = raw_url if raw_url.startswith("http") else f"https://{raw_url}"
         parsed = urlparse(url)
@@ -92,10 +70,6 @@ def extract_brand_from_url(raw_url: str) -> str:
 
 
 def scrape_url(raw_url: str) -> dict:
-    """Extrae título/descripción/texto visible de una URL con timeout estricto de 4s.
-    Si la red social bloquea el acceso, hay error de red, o la respuesta no es HTML útil,
-    se activa un fallback suave: se deriva el nombre de marca desde la propia URL y el
-    flujo continúa sin interrupciones ni pantallas congeladas."""
     url = raw_url.strip()
     if not url.lower().startswith("http"):
         return {"url": url, "title": url, "content": f"Marca de referencia: {url}", "scraped": False}
@@ -119,76 +93,46 @@ def scrape_url(raw_url: str) -> dict:
             body_text = " ".join(t.get_text(" ", strip=True) for t in soup.find_all(["h1", "h2", "h3", "p", "li"])[:60])
 
             if not title and not description and not body_text:
-                raise ValueError("Respuesta sin contenido útil (posible bloqueo silencioso)")
+                raise ValueError("Sin contenido útil")
 
             marca = title or extract_brand_from_url(url)
             content = f"Título: {marca}\nDescripción: {description}\nContenido: {body_text}".strip()[:6000]
             return {"url": url, "title": marca, "content": content, "scraped": True}
-    except Exception as exc:  # noqa: BLE001 - fallback suave, jamás rompe el flujo
+    except Exception as exc:
         marca = extract_brand_from_url(url)
-        log.warning("Scraping degradado para %s (%s) -> usando marca '%s'", url, exc, marca)
+        log.warning("Scraping degradado para %s (%s)", url, exc)
         return {
             "url": url,
             "title": marca,
-            "content": f"No se pudo acceder al contenido de {url} (bloqueo o timeout). Trabaja con '{marca}' como marca de referencia usando conocimiento general del sector.",
+            "content": f"No se pudo acceder a {url}. Usa '{marca}' como marca de referencia.",
             "scraped": False,
         }
 
-
 # -----------------------------------------------------------------------------
-# Módulo de IA (Gemini) - inteligencia competitiva + carrusel narrativo en UNA sola llamada
+# Generación con IA (Gemini Multimodal)
 # -----------------------------------------------------------------------------
 
-_METRICA = {
-    "type": "object",
-    "properties": {
-        "tu_negocio": {"type": "integer"},
-        "competencia": {"type": "integer"}
-    },
-    "required": ["tu_negocio", "competencia"],
-}
-
-_DIA_PLAN = {
-    "type": "object",
-    "properties": {
-        "idea": {"type": "string"},
-        "objetivo": {"type": "string"}
-    },
-    "required": ["idea", "objetivo"],
-}
+_METRICA = {"type": "object", "properties": {"tu_negocio": {"type": "integer"}, "competencia": {"type": "integer"}}, "required": ["tu_negocio", "competencia"]}
+_DIA_PLAN = {"type": "object", "properties": {"idea": {"type": "string"}, "objetivo": {"type": "string"}}, "required": ["idea", "objetivo"]}
 
 CAMPAIGN_SCHEMA = {
     "type": "object",
     "properties": {
         "nombre_campana": {"type": "string"},
-        "score_competencia": {
-            "type": "integer",
-            "description": "0 a 100, dominancia de mercado del negocio propio frente al rival",
-        },
+        "score_competencia": {"type": "integer"},
         "metricas_comparativas": {
             "type": "object",
-            "properties": {
-                "engagement": _METRICA,
-                "calidad_contenido": _METRICA,
-                "frecuencia": _METRICA,
-            },
+            "properties": {"engagement": _METRICA, "calidad_contenido": _METRICA, "frecuencia": _METRICA},
             "required": ["engagement", "calidad_contenido", "frecuencia"],
         },
         "matriz_swot": {
             "type": "object",
-            "properties": {
-                "fortalezas_rival": {"type": "array", "items": {"type": "string"}},
-                "puntos_debiles_rival": {"type": "array", "items": {"type": "string"}},
-            },
+            "properties": {"fortalezas_rival": {"type": "array", "items": {"type": "string"}}, "puntos_debiles_rival": {"type": "array", "items": {"type": "string"}}},
             "required": ["fortalezas_rival", "puntos_debiles_rival"],
         },
         "plan_semanal": {
             "type": "object",
-            "properties": {
-                "lunes": _DIA_PLAN,
-                "miercoles": _DIA_PLAN,
-                "viernes": _DIA_PLAN,
-            },
+            "properties": {"lunes": _DIA_PLAN, "miercoles": _DIA_PLAN, "viernes": _DIA_PLAN},
             "required": ["lunes", "miercoles", "viernes"],
         },
         "recomendaciones_clave": {"type": "array", "items": {"type": "string"}},
@@ -198,97 +142,72 @@ CAMPAIGN_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "tipo": {
-                        "type": "string",
-                        "enum": ["Gancho", "Problema", "Solucion", "Beneficios", "CTA"],
-                    },
+                    "tipo": {"type": "string", "enum": ["Gancho", "Problema", "Solucion", "Beneficios", "CTA"]},
                     "titulo": {"type": "string"},
                     "descripcion": {"type": "string"},
-                    "image_prompt": {
-                        "type": "string",
-                        "description": "Prompt en inglés, conciso (15-20 palabras), fondo fotográfico neutro/estudio",
-                    },
+                    "image_prompt": {"type": "string"},
                 },
                 "required": ["tipo", "titulo", "descripcion", "image_prompt"],
             },
         },
     },
-    "required": [
-        "nombre_campana",
-        "score_competencia",
-        "metricas_comparativas",
-        "matriz_swot",
-        "plan_semanal",
-        "recomendaciones_clave",
-        "hashtags",
-        "carrusel_placas",
-    ],
+    "required": ["nombre_campana", "score_competencia", "metricas_comparativas", "matriz_swot", "plan_semanal", "recomendaciones_clave", "hashtags", "carrusel_placas"],
 }
 
 
-def generate_campaign(business: dict, competitor: dict, angulo: Optional[str] = None) -> dict:
+def generate_campaign(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
     if not GEMINI_API_KEY:
-        raise RuntimeError("Falta configurar la variable de entorno GEMINI_API_KEY")
+        raise RuntimeError("Falta GEMINI_API_KEY")
 
-    linea_angulo = (
-        f"Ángulo/enfoque solicitado para esta versión de la campaña: '{angulo}'. Adapta tono, ganchos y CTA a ese enfoque."
-        if angulo
-        else "Usa un ángulo equilibrado, profesional y persuasivo por defecto."
-    )
-
-    prompt = f"""Eres un estratega senior de marketing digital, analista de inteligencia competitiva y director creativo publicitario de agencia premium, experto en carruseles narrativos de alto rendimiento para Instagram/TikTok Ads.
+    linea_angulo = f"Enfoque solicitado: '{angulo}'." if angulo else "Enfoque publicitario equilibrado y persuasivo."
+    
+    prompt = f"""Eres un estratega senior de marketing digital y director creativo publicitario.
 
 NEGOCIO PROPIO ({business['url']}):
 {business['content']}
 
-COMPETIDOR A ANALIZAR ({competitor['url']}):
+COMPETIDOR ({competitor['url']}):
 {competitor['content']}
 
 {linea_angulo}
 
-Genera un análisis y UN ÚNICO carrusel narrativo completos en JSON con:
-- nombre_campana: nombre corto y memorable de la campaña.
-- score_competencia: entero 0-100 que representa qué tan bien posicionado está el negocio propio frente al rival (más alto = mejor posicionado). Sé realista y variado, no siempre uses 50.
-- metricas_comparativas: para engagement, calidad_contenido y frecuencia, un puntaje 0-100 estimado para "tu_negocio" y para "competencia" en cada una, basado en el contenido analizado.
-- matriz_swot: fortalezas_rival (3 a 4 puntos fuertes del competidor) y puntos_debiles_rival (3 a 4 debilidades u oportunidades que el negocio propio puede explotar).
-- plan_semanal: una idea táctica concreta y su objetivo de negocio para lunes, miércoles y viernes.
-- recomendaciones_clave: exactamente 3 acciones inmediatas y accionables para el negocio propio.
-- hashtags: 6 a 8 hashtags relevantes en español, con #, para toda la campaña.
-- carrusel_placas: array de EXACTAMENTE 5 objetos, en este orden narrativo obligatorio:
-  1) tipo="Gancho": título de alto impacto que detiene el scroll + subtítulo breve.
-  2) tipo="Problema": explica el riesgo, la molestia o el punto de dolor actual del cliente.
-  3) tipo="Solucion": presenta la propuesta de valor del negocio propio como la solución.
-  4) tipo="Beneficios": 2-3 puntos fuertes/diferenciadores frente al rival (puedes usar viñetas dentro de "descripcion").
-  5) tipo="CTA": oferta concreta, incentivo y el paso a seguir (ej. "Escríbenos ahora").
-Cada placa necesita:
-  - titulo: headline corto y contundente (máx 8 palabras, en español).
-  - descripcion: texto de apoyo breve (máx 2 frases cortas, en español) legible como overlay sobre una foto.
-  - image_prompt: prompt EN INGLÉS, CONCISO (15-20 palabras), enfocado SOLO en una fotografía de fondo neutra/minimalista tipo estudio, coherente con el momento narrativo de esa placa -- ej. estilo "clean minimal aesthetic background, natural soft lighting, studio shot, high resolution".
-    La composición debe quedar despejada para que un texto se pueda superponer con buena legibilidad.
-    No incluyas texto, letras ni logos dentro de la imagen.
+INSTRUCCIONES DE IMAGEN OBLIGATORIAS:
+- Identifica el producto/servicio exacto del negocio propio.
+- Si hay imágenes de muestra adjuntas, analiza su estética, empaque y colores reales.
+- CADA uno de los 5 'image_prompt' DEBE estar escrito EN INGLÉS y DEBE contener EXPLÍCITAMENTE el tipo de producto/rubro exacto (ej. si son 'jabones artesanales', usa 'handcrafted organic soap bar').
+- NUNCA generes ambientes o muebles genéricos desvinculados del producto.
+- Estilo: 'Professional commercial photography, sharp focus, 8k resolution, studio soft lighting, clean background, hyper-realistic, high detail'.
+- NO incluyas texto ni letras dentro de las imágenes.
+
+Genera el JSON completo respetando la estructura schema.
 """
 
     model = genai.GenerativeModel(GEMINI_MODEL)
+    contents = [prompt]
+    if image_pil_list:
+        contents.extend(image_pil_list)
+
     response = model.generate_content(
-        prompt,
+        contents,
         generation_config={
             "response_mime_type": "application/json",
             "response_schema": CAMPAIGN_SCHEMA,
-            "temperature": 0.85,
+            "temperature": 0.8,
         },
     )
     return json.loads(response.text)
 
 
 # -----------------------------------------------------------------------------
-# Módulo Visual - Pollinations.ai (Flux), gratuito y sin API key
+# Módulo Visual HD
 # -----------------------------------------------------------------------------
 
-def build_pollinations_url(prompt: str, fallback_text: str = "AdGenius") -> str:
-    texto = (prompt or fallback_text).strip()
-    encoded = urllib.parse.quote(texto)  # Sanitización obligatoria del prompt
+def build_pollinations_url(prompt: str, fallback_text: str = "product") -> str:
+    base_prompt = (prompt or fallback_text).strip()
+    hd_prompt = f"{base_prompt}, sharp focus, 8k resolution, ultra detailed, professional studio shot"
+    encoded = urllib.parse.quote(hd_prompt)
     seed = random.randint(1, 999_999)
-    return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=1080&height=1350&nologo=true&seed={seed}"
+    return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=1080&height=1350&nologo=true&enhance=true&quality=100&seed={seed}"
 
 
 # -----------------------------------------------------------------------------
@@ -301,31 +220,40 @@ async def home(request: Request):
 
 
 @app.post("/api/analyze")
-async def analyze(payload: AnalyzeRequest):
+async def analyze(
+    business_url: str = Form(...),
+    competitor_url: str = Form(...),
+    angulo: Optional[str] = Form(None),
+    images: List[UploadFile] = File(None)
+):
     def sse(stage: str, status: str, mensaje: str, data: Optional[dict] = None) -> str:
         body = json.dumps({"stage": stage, "status": status, "mensaje": mensaje, "data": data}, ensure_ascii=False)
         return f"data: {body}\n\n"
 
     async def event_stream():
         try:
-            yield sse("scraping", "start", "🔍 Extrayendo y analizando la marca/competencia...")
-            business = await run_in_threadpool(scrape_url, payload.business_url)
-            competitor = await run_in_threadpool(scrape_url, payload.competitor_url)
+            yield sse("scraping", "start", "🔍 Analizando marca y competencia...")
+            business = await run_in_threadpool(scrape_url, business_url)
+            competitor = await run_in_threadpool(scrape_url, competitor_url)
 
-            yield sse(
-                "scraping",
-                "done",
-                "🔍 Marca y competencia identificadas.",
-                {"business_title": business["title"], "competitor_title": competitor["title"]},
-            )
+            # Procesar fotos de marca si se subieron
+            pil_images = []
+            if images:
+                for img in images:
+                    if img.content_type.startswith("image/"):
+                        contents = await img.read()
+                        if contents:
+                            pil_images.append(Image.open(io.BytesIO(contents)))
 
-            yield sse("estrategia", "start", "🧠 Generando análisis competitivo, métricas y carrusel narrativo con IA...")
-            campana = await run_in_threadpool(generate_campaign, business, competitor, payload.angulo)
+            yield sse("scraping", "done", "🔍 Datos procesados.", {"business_title": business["title"], "competitor_title": competitor["title"]})
+
+            yield sse("estrategia", "start", "🧠 Generando estrategia e ideas de carrusel HD con IA...")
+            campana = await run_in_threadpool(generate_campaign, business, competitor, angulo, pil_images)
 
             yield sse(
                 "estrategia",
                 "done",
-                "🧠 Estrategia, métricas y carrusel listos.",
+                "🧠 Estrategia generada con éxito.",
                 {
                     "nombre_campana": campana["nombre_campana"],
                     "score_competencia": campana["score_competencia"],
@@ -342,7 +270,7 @@ async def analyze(payload: AnalyzeRequest):
                 yield sse(
                     "imagen",
                     "start",
-                    f"🎨 Renderizando fondo fotorrealista con Pollinations.ai (Placa {i + 1}/{total})...",
+                    f"🎨 Renderizando placa HD {i + 1}/{total}...",
                     {
                         "index": i,
                         "total": total,
@@ -351,7 +279,7 @@ async def analyze(payload: AnalyzeRequest):
                         "descripcion": placa["descripcion"],
                     },
                 )
-                await asyncio.sleep(0.3)  # pacing visual: construir la URL es instantáneo
+                await asyncio.sleep(0.2)
                 image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
                 yield sse(
                     "imagen",
@@ -360,26 +288,20 @@ async def analyze(payload: AnalyzeRequest):
                     {"index": i, "image_url": image_url},
                 )
 
-            yield sse("completo", "done", "✨ Carrusel listo para lanzar.", {"nombre_campana": campana["nombre_campana"]})
+            yield sse("completo", "done", "✨ Carrusel completo y listo.", {"nombre_campana": campana["nombre_campana"]})
 
-        except Exception as exc:  # noqa: BLE001
-            log.exception("Error en el pipeline de análisis")
-            yield sse("error", "error", "⚠️ Ocurrió un error durante la generación.", {"mensaje": str(exc)})
+        except Exception as exc:
+            log.exception("Error en pipeline")
+            yield sse("error", "error", "⚠️ Ocurrió un error en la generación.", {"mensaje": str(exc)})
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.get("/api/health")
 async def health():
-    return {
-        "status": "ok",
-        "gemini_configurado": bool(GEMINI_API_KEY),
-        "gemini_modelo": GEMINI_MODEL,
-        "motor_imagenes": "pollinations.ai (flux, gratuito, sin API key)",
-    }
+    return {"status": "ok", "gemini_configurado": bool(GEMINI_API_KEY)}
 
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("app:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=True)
