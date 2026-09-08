@@ -3,24 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Anuncios IA</title>
+    <title>AdGenius IA - Generador de Anuncios</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-xl w-full bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
-        <h1 class="text-2xl font-bold mb-4 text-center text-blue-400">Generador de Anuncios IA</h1>
-        <p class="text-slate-300 mb-6 text-center text-sm">Ingresa los datos para analizar competidores y generar tu contenido publicitario.</p>
-        <form action="/generar" method="post" class="space-y-4">
-            <div>
-                <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Nombre del Producto</label>
-                <input type="text" name="producto" placeholder="Ej: Jabón Artesanal de Avena" class="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:border-blue-500 text-white" required>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between font-sans">
+
+    <div class="max-w-4xl mx-auto px-4 py-8 w-full">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-400 mb-2">Generador de Anuncios IA</h1>
+            <p class="text-slate-400 text-sm">Analiza competidores y genera estrategias con imágenes en tiempo real.</p>
+        </header>
+
+        <!-- Formulario -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl mb-8">
+            <form id="adForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Tu Producto / Nombre de Marca / URL</label>
+                    <input type="text" id="producto" name="producto" required placeholder="Ej: Jabón Artesanal de Avena o https://mimarca.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Descripción / Beneficios o URL del Competidor</label>
+                    <textarea id="descripcion" name="descripcion" rows="3" required placeholder="Ej: Hidratante natural ideal para piel sensible, o ingresa la URL de tu competidor..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-lg transition duration-200">
+                    Generar Anuncio
+                </button>
+            </form>
+        </div>
+
+        <!-- Estado / Progreso -->
+        <div id="statusContainer" class="hidden bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 mb-8">
+            <div class="flex items-center space-x-3">
+                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400" id="spinner"></div>
+                <span id="statusText" class="text-sm text-slate-300 font-medium">Iniciando proceso...</span>
             </div>
-            <div>
-                <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Descripción / Beneficios</label>
-                <textarea name="descripcion" rows="3" placeholder="Ej: Hidratante natural, ideal para piel sensible..." class="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:border-blue-500 text-white" required></textarea>
+        </div>
+
+        <!-- Resultados -->
+        <div id="resultsContainer" class="hidden space-y-6">
+            <!-- Análisis de Competencia -->
+            <div id="analysisCard" class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h2 class="text-lg font-bold text-blue-400 mb-4">Análisis de Competencia</h2>
+                <div id="analysisContent" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300"></div>
             </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded transition-colors">Generar Anuncio</button>
-        </form>
+
+            <!-- Estrategia y Placas -->
+            <div id="strategyCard" class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h2 id="campaignTitle" class="text-xl font-bold text-slate-100 mb-2"></h2>
+                <div id="campaignHashtags" class="text-xs text-blue-400 mb-6 space-x-2"></div>
+
+                <div id="placasGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        const form = document.getElementById('adForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusContainer = document.getElementById('statusContainer');
+        const statusText = document.getElementById('statusText');
+        const resultsContainer = document.getElementById('resultsContainer');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50');
+            statusContainer.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+            statusText.innerText = 'Scrapeando información...';
+
+            const formData = new FormData(form);
+            const response = await fetch('/generar', { method: 'POST', body: formData });
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const payload = JSON.parse(line.replace('data: ', ''));
+                            handleSSE(payload);
+                        } catch (err) {}
+                    }
+                }
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50');
+        });
+
+        function handleSSE(payload) {
+            const { stage, status, data } = payload;
+
+            if (stage === 'scraping' && status === 'done') {
+                statusText.innerText = 'Analizando competidores con IA...';
+            } else if (stage === 'analisis' && status === 'done') {
+                statusText.innerText = 'Diseñando la estrategia de contenido...';
+                renderAnalysis(data);
+            } else if (stage === 'estrategia' && status === 'done') {
+                statusText.innerText = 'Generando imágenes con IA...';
+                renderCampaignHeader(data);
+            } else if (stage === 'imagen' && status === 'start') {
+                statusText.innerText = `Generando imagen para placa: ${data.titulo}...`;
+            } else if (stage === 'complete' && status === 'done') {
+                statusText.innerText = '¡Proceso completado!';
+                document.getElementById('spinner').classList.add('hidden');
+                renderPlacas(data.placas);
+                resultsContainer.classList.remove('hidden');
+            } else if (stage === 'error') {
+                statusText.innerText = `Error: ${data.mensaje}`;
+                document.getElementById('spinner').classList.add('hidden');
+            }
+        }
+
+        function renderAnalysis(data) {
+            const container = document.getElementById('analysisContent');
+            container.innerHTML = `
+                <div><strong>Ganchos Exitosos:</strong> <ul class="list-disc pl-4">${(data.ganchos_exitosos || []).map(g => `<li>${g}</li>`).join('')}</ul></div>
+                <div><strong>Debilidades:</strong> <ul class="list-disc pl-4">${(data.debilidades || []).map(d => `<li>${d}</li>`).join('')}</ul></div>
+                <div><strong>Tono de Marca:</strong> ${data.tono_de_marca || ''}</div>
+                <div><strong>Oportunidad Clave:</strong> ${data.oportunidad_clave || ''}</div>
+            `;
+        }
+
+        function renderCampaignHeader(data) {
+            document.getElementById('campaignTitle').innerText = data.nombre_campana || 'Campaña Generada';
+            document.getElementById('campaignHashtags').innerText = (data.hashtags || []).map(h => `#${h}`).join(' ');
+        }
+
+        function renderPlacas(placas) {
+            const grid = document.getElementById('placasGrid');
+            grid.innerHTML = placas.map(p => `
+                <div class="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden flex flex-col justify-between">
+                    <div>
+                        ${p.image_url ? `<img src="${p.image_url}" alt="${p.titulo}" class="w-full h-48 object-cover">` : `<div class="w-full h-48 bg-slate-800 flex items-center justify-center text-xs text-slate-500">Imagen no disponible</div>`}
+                        <div class="p-4">
+                            <span class="text-xs bg-blue-900/50 text-blue-300 border border-blue-700/50 px-2 py-1 rounded font-semibold uppercase">${p.tipo}</span>
+                            <h3 class="font-bold text-slate-100 text-base mt-2 mb-1">${p.titulo}</h3>
+                            <p class="text-xs text-slate-400">${p.copy}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
 </body>
 </html>
