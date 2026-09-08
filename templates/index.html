@@ -62,14 +62,14 @@
             </form>
         </div>
 
-        <!-- Status Loader -->
+        <!-- Indicator Loader -->
         <div id="statusContainer" class="hidden glass-card rounded-2xl p-4 border-purple-500/50">
             <div class="flex items-center gap-3">
                 <div class="relative flex h-3 w-3">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
                 </div>
-                <p id="statusText" class="text-purple-300 text-xs font-bold tracking-wide">Conectando motor...</p>
+                <p id="statusText" class="text-purple-300 text-xs font-bold tracking-wide">Iniciando motor...</p>
             </div>
         </div>
 
@@ -87,7 +87,7 @@
                     </div>
                 </div>
 
-                <!-- Métricas Comparativas Corregidas -->
+                <!-- Métricas Comparativas -->
                 <div>
                     <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">📊 Comparativa Tu Marca vs Competidor</h3>
                     <div id="metricsGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
@@ -121,8 +121,8 @@
             <!-- Carrusel -->
             <div class="space-y-4">
                 <div>
-                    <h3 class="text-xl font-extrabold text-white">Placas del Carrusel Publicitario</h3>
-                    <p class="text-xs text-slate-400">Generación secuencial con carga asegurada</p>
+                    <h3 class="text-xl font-extrabold text-white">Placas del Carrusel Publicitario HD</h3>
+                    <p class="text-xs text-slate-400">Carga visual de alta calidad en tiempo real</p>
                 </div>
                 <div id="carouselContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
             </div>
@@ -158,7 +158,7 @@
             statusContainer.classList.remove('hidden');
             dashboard.classList.add('hidden');
             carouselContainer.innerHTML = '';
-            statusText.innerText = 'Conectando con el motor AdVance AI...';
+            statusText.innerText = 'Analizando mercado y armando estrategia...';
 
             try {
                 const response = await fetch('/api/analyze', {
@@ -182,6 +182,7 @@
                                 const json = JSON.parse(line.replace('data: ', ''));
                                 statusText.innerText = json.mensaje;
 
+                                // RENDER INMEDIATO DE TEXTOS Y DASHBOARD
                                 if (json.stage === 'estrategia' && json.status === 'done') {
                                     dashboard.classList.remove('hidden');
                                     const data = json.data;
@@ -189,7 +190,6 @@
                                     campaignTitle.innerText = data.nombre_campana;
                                     scoreBadge.innerText = `Score Competencia: ${data.score_competencia}/100`;
 
-                                    // Fix para Métricas
                                     const m = data.metricas_comparativas;
                                     metricsGrid.innerHTML = `
                                         <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 text-center">
@@ -206,7 +206,6 @@
                                         </div>
                                     `;
 
-                                    // FODA
                                     const sw = data.matriz_swot;
                                     swotGrid.innerHTML = `
                                         <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
@@ -223,7 +222,6 @@
                                         </div>
                                     `;
 
-                                    // Plan Semanal
                                     const p = data.plan_semanal;
                                     weeklyPlan.innerHTML = `
                                         <p><strong>Lunes:</strong> ${p.lunes.idea} <em>(${p.lunes.objetivo})</em></p>
@@ -235,49 +233,38 @@
                                     hashtagsText.innerText = data.hashtags.join(' ');
                                 }
 
-                                if (json.stage === 'imagen' && json.status === 'start') {
+                                // CREACIÓN Y CARGA PARALELA DE CARDS DE IMAGEN HD
+                                if (json.stage === 'imagen' && json.status === 'done') {
+                                    const d = json.data;
                                     const card = document.createElement('div');
-                                    card.id = `card-${json.data.index}`;
+                                    card.id = `card-${d.index}`;
                                     card.className = 'glass-card rounded-2xl overflow-hidden flex flex-col justify-between h-[380px] relative border-purple-500/30';
                                     card.innerHTML = `
                                         <div class="img-loader absolute inset-0 loader-shimmer flex flex-col items-center justify-center p-4 text-center z-0">
                                             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400 mb-2"></div>
-                                            <span class="text-xs text-purple-300 font-semibold">Renderizando placa...</span>
-                                            <span class="text-[10px] text-slate-400 mt-1">Placa ${json.data.index + 1} de ${json.data.total}</span>
+                                            <span class="text-xs text-purple-300 font-semibold">Cargando render HD...</span>
+                                            <span class="text-[10px] text-slate-400 mt-1">Placa ${d.index + 1} de ${d.total}</span>
                                         </div>
                                         <div class="relative z-10 p-4 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent h-full flex flex-col justify-between">
-                                            <span class="inline-block self-start px-2 py-0.5 rounded-md bg-purple-500/40 border border-purple-400/50 text-[10px] font-bold text-purple-200 uppercase">${json.data.tipo}</span>
+                                            <span class="inline-block self-start px-2 py-0.5 rounded-md bg-purple-500/40 border border-purple-400/50 text-[10px] font-bold text-purple-200 uppercase">${d.tipo}</span>
                                             <div>
-                                                <h4 class="font-bold text-white text-xs mb-1 leading-snug">${json.data.titulo}</h4>
-                                                <p class="text-[11px] text-slate-300 leading-relaxed line-clamp-4">${json.data.descripcion}</p>
+                                                <h4 class="font-bold text-white text-xs mb-1 leading-snug">${d.titulo}</h4>
+                                                <p class="text-[11px] text-slate-300 leading-relaxed line-clamp-4">${d.descripcion}</p>
                                             </div>
                                         </div>
                                     `;
                                     carouselContainer.appendChild(card);
-                                }
 
-                                if (json.stage === 'imagen' && json.status === 'done') {
-                                    const card = document.getElementById(`card-${json.data.index}`);
-                                    if (card) {
-                                        const imgUrl = json.data.image_url;
-                                        const preloader = new Image();
-                                        preloader.src = imgUrl;
-                                        
-                                        preloader.onload = () => {
-                                            card.style.backgroundImage = `url('${imgUrl}')`;
-                                            card.style.backgroundSize = 'cover';
-                                            card.style.backgroundPosition = 'center';
-                                            const loader = card.querySelector('.img-loader');
-                                            if (loader) loader.remove();
-                                        };
-
-                                        preloader.onerror = () => {
-                                            const loader = card.querySelector('.img-loader');
-                                            if (loader) {
-                                                loader.innerHTML = `<span class="text-[10px] text-purple-300 font-semibold p-2">Imagen generada (Haz reintento si no carga)</span>`;
-                                            }
-                                        };
-                                    }
+                                    // Carga asíncrona de imagen en caché del navegador
+                                    const preloader = new Image();
+                                    preloader.src = d.image_url;
+                                    preloader.onload = () => {
+                                        card.style.backgroundImage = `url('${d.image_url}')`;
+                                        card.style.backgroundSize = 'cover';
+                                        card.style.backgroundPosition = 'center';
+                                        const loader = card.querySelector('.img-loader');
+                                        if (loader) loader.remove();
+                                    };
                                 }
 
                                 if (json.stage === 'completo') {
@@ -288,7 +275,7 @@
                     }
                 }
             } catch (err) {
-                statusText.innerText = '⚠️ Error de conexión.';
+                statusText.innerText = '⚠️ Error de comunicación con el servidor.';
             }
         });
     </script>

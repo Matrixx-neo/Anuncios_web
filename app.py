@@ -28,7 +28,7 @@ log = logging.getLogger("advance_ai")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-SCRAPE_TIMEOUT = 3.5
+SCRAPE_TIMEOUT = 2.0
 POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
 
 if GEMINI_API_KEY:
@@ -62,8 +62,10 @@ def extract_brand_from_url(raw_url: str) -> str:
 
 def scrape_url(raw_url: str) -> dict:
     url = raw_url.strip()
+    marca = extract_brand_from_url(url)
+    
     if not url.lower().startswith("http"):
-        return {"url": url, "title": url, "content": f"Marca de referencia: {url}", "scraped": False}
+        return {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
 
     try:
         timeout = httpx.Timeout(SCRAPE_TIMEOUT, connect=SCRAPE_TIMEOUT)
@@ -81,13 +83,11 @@ def scrape_url(raw_url: str) -> dict:
 
             title = meta("og:title", "twitter:title") or (soup.title.string.strip() if soup.title and soup.title.string else "")
             description = meta("og:description", "twitter:description", "description")
-            body_text = " ".join(t.get_text(" ", strip=True) for t in soup.find_all(["h1", "h2", "h3", "p", "li"])[:50])
+            body_text = " ".join(t.get_text(" ", strip=True) for t in soup.find_all(["h1", "h2", "h3", "p"])[:30])
 
-            marca = title or extract_brand_from_url(url)
-            content = f"Título: {marca}\nDescripción: {description}\nContenido: {body_text}".strip()[:4000]
-            return {"url": url, "title": marca, "content": content, "scraped": True}
+            content = f"Título/Marca: {title or marca}\nDescripción: {description}\nContenido: {body_text}".strip()[:2500]
+            return {"url": url, "title": title or marca, "content": content, "scraped": True}
     except Exception:
-        marca = extract_brand_from_url(url)
         return {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
 
 _METRICA = {
@@ -168,13 +168,13 @@ def optimize_image(image_bytes: bytes) -> Image.Image:
 
 def generate_campaign(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
     if not GEMINI_API_KEY:
-        raise RuntimeError("Falta GEMINI_API_KEY en las variables de entorno de Render")
+        raise RuntimeError("Falta GEMINI_API_KEY en el entorno")
 
-    linea_angulo = f"Enfoque solicitado: '{angulo}'." if angulo else "Enfoque publicitario comercial de alto impacto."
+    linea_angulo = f"Enfoque estratégico: '{angulo}'." if angulo else "Enfoque publicitario comercial de alto impacto."
 
-    prompt = f"""Eres el estratega creativo y CMO de AdVance AI.
+    prompt = f"""Eres el CMO y estratega creativo principal de AdVance AI.
 
-TU NEGOCIO ({business['url']}):
+NEGOCIO ANALIZADO ({business['url']}):
 {business['content']}
 
 COMPETIDOR DIRECTO ({competitor['url']}):
@@ -182,12 +182,10 @@ COMPETIDOR DIRECTO ({competitor['url']}):
 
 {linea_angulo}
 
-INSTRUCCIONES CLAVE:
-1. Realiza una auditoría comparativa profunda. En las métricas comparativas (engagement, calidad_contenido, frecuencia), CADA UNA debe ser un objeto con las llaves 'tu_negocio' (entero de 1 a 100) y 'competencia' (entero de 1 a 100).
-2. Diseña un plan de contenido semanal ejecutable (Lunes, Miércoles y Viernes).
-3. Si hay imágenes adjuntas del producto, analiza su empaque y colores para mantener coherencia estética.
-4. Genera un carrusel estratégico de EXACTAMENTE 5 placas (Gancho, Problema, Solución, Beneficios, CTA).
-5. Cada 'image_prompt' DEBE estar en INGLÉS y especificar claramente el producto real en estilo fotográfico comercial: 'Professional commercial photography, sharp focus, 8k resolution, studio lighting, pristine detail'. Sin texto en la imagen.
+INSTRUCCIONES:
+1. Realiza una auditoría comparativa exprés.
+2. Cada 'image_prompt' DEBE ser extremadamente detallado en INGLÉS para un modelo de difusión HD (Flux). Especifica: 'Ultra-realistic professional studio product photography, 8k resolution, cinematic commercial lighting, depth of field, vibrant textures, minimalist modern layout, photorealistic'. NO incluyas texto dentro de las imágenes.
+3. Genera EXACTAMENTE 5 placas ordenadas (Gancho, Problema, Solución, Beneficios, CTA).
 """
 
     model = genai.GenerativeModel(GEMINI_MODEL)
@@ -205,9 +203,9 @@ INSTRUCCIONES CLAVE:
     )
     return json.loads(response.text)
 
-def build_pollinations_url(prompt: str, fallback_text: str = "product") -> str:
+def build_pollinations_url(prompt: str, fallback_text: str = "product photography") -> str:
     base_prompt = (prompt or fallback_text).strip()
-    hd_prompt = f"{base_prompt}, clean background, professional product photography, 8k, detailed, photorealistic"
+    hd_prompt = f"Professional studio photography of {base_prompt}, high resolution 8k, photorealistic, sharp focus, vibrant aesthetic, commercial advertising"
     encoded = urllib.parse.quote(hd_prompt)
     seed = random.randint(1000, 999999)
     return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=800&height=1000&nologo=true&seed={seed}"
@@ -229,13 +227,16 @@ async def analyze(
 
     async def event_stream():
         try:
-            yield sse("scraping", "start", "🔍 Analizando perfiles y mercado...")
-            business = await run_in_threadpool(scrape_url, business_url)
-            competitor = await run_in_threadpool(scrape_url, competitor_url)
+            yield sse("scraping", "start", "⚡ Analizando datos de mercado...")
+            
+            # Ejecutar scraping en paralelo con tiempo límite estricto
+            task_biz = run_in_threadpool(scrape_url, business_url)
+            task_comp = run_in_threadpool(scrape_url, competitor_url)
+            business, competitor = await asyncio.gather(task_biz, task_comp)
 
             pil_images = []
             if images:
-                yield sse("scraping", "progress", "📸 Procesando imágenes adjuntas...")
+                yield sse("scraping", "progress", "📸 Optimizando imágenes...")
                 for img in images:
                     if img.content_type and img.content_type.startswith("image/"):
                         contents = await img.read()
@@ -243,51 +244,38 @@ async def analyze(
                             optimized_img = await run_in_threadpool(optimize_image, contents)
                             pil_images.append(optimized_img)
 
-            yield sse("scraping", "done", "🔍 Análisis inicial listo.")
-
-            yield sse("estrategia", "start", "🧠 Generando auditoría, FODA y carrusel...")
+            yield sse("estrategia", "start", "🧠 Generando Dashboard y Análisis estratégico...")
             campana = await run_in_threadpool(generate_campaign, business, competitor, angulo, pil_images)
 
-            yield sse("estrategia", "done", "📊 Estrategia generada.", campana)
+            # ENVIAR DATOS DE TEXTO INMEDIATAMENTE
+            yield sse("estrategia", "done", "📊 ¡Dashboard generado con éxito!", campana)
 
+            # ENVIAR URLS DE IMÁGENES AL INSTANTE SIN DELAY
             total = len(campana["carrusel_placas"])
             for i, placa in enumerate(campana["carrusel_placas"]):
+                image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
+                
                 yield sse(
                     "imagen",
-                    "start",
-                    f"🎨 Creando imagen {i + 1}/{total}...",
+                    "done",
+                    f"✨ Placa {i + 1}/{total} enviada a renderizado.",
                     {
                         "index": i,
                         "total": total,
                         "tipo": placa["tipo"],
                         "titulo": placa["titulo"],
-                        "descripcion": placa["descripcion"]
+                        "descripcion": placa["descripcion"],
+                        "image_url": image_url
                     }
-                )
-
-                image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
-                
-                # Pausa de 2 segundos para dar respiro al renderizador
-                await asyncio.sleep(2.0)
-
-                yield sse(
-                    "imagen",
-                    "done",
-                    f"✨ Placa {i + 1}/{total} procesada.",
-                    {"index": i, "image_url": image_url}
                 )
 
             yield sse("completo", "done", "🚀 Proceso finalizado.", {"nombre_campana": campana["nombre_campana"]})
 
         except Exception as exc:
-            log.exception("Error en AdVance AI")
-            yield sse("error", "error", f"⚠️ Error: {str(exc)}")
+            log.exception("Error en proceso AdVance AI")
+            yield sse("error", "error", f"⚠️ Ocurrió un inconveniente: {str(exc)}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
-
-@app.get("/api/health")
-async def health():
-    return {"status": "ok", "app": "AdVance AI"}
 
 if __name__ == "__main__":
     import uvicorn
