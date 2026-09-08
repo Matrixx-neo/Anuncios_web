@@ -1,6 +1,6 @@
 """
-AdVance AI - SaaS Marketing & Ad Carousel Generator
-===================================================
+AdVance AI - SaaS Marketing Studio (Bulletproof Production Edition)
+===================================================================
 """
 
 import asyncio
@@ -26,12 +26,12 @@ import io
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("advance_ai")
 
-# MANEJO MULTI-KEY Y MODELOS VÁLIDOS V1BETA
+# MANEJO MULTI-KEY
 RAW_KEYS = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
 API_KEYS = [k.strip() for k in RAW_KEYS.split(",") if k.strip()]
 
-# Modelos vigentes confirmados
-VALID_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
+# Modelo estable actual
+MODEL_NAME = "gemini-2.5-flash"
 
 SCRAPE_TIMEOUT = 2.0
 POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
@@ -67,11 +67,9 @@ def extract_brand_from_url(raw_url: str) -> str:
 def scrape_url(raw_url: str) -> dict:
     url = raw_url.strip()
     if url in SCRAPE_CACHE:
-        log.info(f"⚡ [CACHE HIT] Datos reutilizados para: {url}")
         return SCRAPE_CACHE[url]
 
     marca = extract_brand_from_url(url)
-    
     if not url.lower().startswith("http"):
         res = {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
         SCRAPE_CACHE[url] = res
@@ -180,9 +178,9 @@ def optimize_image(image_bytes: bytes) -> Image.Image:
     img.thumbnail((1024, 1024))
     return img
 
-def generate_campaign_with_fallback(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
+def generate_campaign_fast(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
     if not API_KEYS:
-        raise RuntimeError("No hay GEMINI_API_KEYS configuradas en el entorno.")
+        raise RuntimeError("No hay API Keys configuradas en el servidor.")
 
     linea_angulo = f"Enfoque estratégico: '{angulo}'." if angulo else "Enfoque publicitario comercial de alto impacto."
 
@@ -199,41 +197,35 @@ COMPETIDOR DIRECTO ({competitor['url']}):
 INSTRUCCIONES DE PROMPTS DE IMAGEN:
 1. Diseña 5 'image_prompt' breves pero potentes en INGLÉS.
 2. Formato: 'Commercial photo of [PRODUCTO/CONCEPTO], studio lighting, 8k resolution, photorealistic, sharp focus, vibrant colors, premium packaging'.
-3. Limita cada image_prompt a máximo 30 palabras.
+3. Limita cada image_prompt a máximo 25 palabras.
 """
 
     last_error = None
+    # Intenta con cada Key usando únicamente gemini-2.5-flash
     for idx, api_key in enumerate(API_KEYS):
-        genai.configure(api_key=api_key)
-        for model_name in VALID_MODELS:
-            try:
-                log.info(f"Intentando llamada con Key #{idx+1} y modelo '{model_name}'...")
-                model = genai.GenerativeModel(model_name)
-                contents = [prompt]
-                if image_pil_list:
-                    contents.extend(image_pil_list)
+        try:
+            genai.configure(api_key=api_key)
+            log.info(f"⚡ Ejecutando estrategia con Key #{idx+1} ({MODEL_NAME})...")
+            model = genai.GenerativeModel(MODEL_NAME)
+            contents = [prompt]
+            if image_pil_list:
+                contents.extend(image_pil_list)
 
-                response = model.generate_content(
-                    contents,
-                    generation_config={
-                        "response_mime_type": "application/json",
-                        "response_schema": CAMPAIGN_SCHEMA,
-                        "temperature": 0.7,
-                    },
-                )
-                return json.loads(response.text)
-            except Exception as e:
-                err_str = str(e)
-                log.warning(f"Error en Key #{idx+1} con {model_name}: {err_str}")
-                last_error = e
-                # Si el modelo no existe (404), pasar inmediatamente al siguiente modelo
-                if "404" in err_str:
-                    continue
-                # Si es cuota agotada (429), la key está agotada: romper bucle de modelos y saltar a la siguiente KEY de inmediato
-                if "429" in err_str:
-                    break
+            response = model.generate_content(
+                contents,
+                generation_config={
+                    "response_mime_type": "application/json",
+                    "response_schema": CAMPAIGN_SCHEMA,
+                    "temperature": 0.7,
+                },
+            )
+            return json.loads(response.text)
+        except Exception as e:
+            log.warning(f"Key #{idx+1} fallo o agoto cuota: {str(e)}")
+            last_error = e
+            continue
 
-    raise RuntimeError(f"Todas las API Keys de la lista están agotadas o inválidas. Detalle: {str(last_error)}")
+    raise RuntimeError(f"Cuota diaria alcanzada en todas las llaves activas. Intenta nuevamente en unos minutos. Detalle: {str(last_error)}")
 
 def build_pollinations_url(prompt: str) -> str:
     clean_prompt = f"Professional product shot, {prompt}, 8k, photorealistic"
@@ -258,7 +250,7 @@ async def analyze(
 
     async def event_stream():
         try:
-            yield sse("scraping", "start", "⚡ Consultando base de datos y web...")
+            yield sse("scraping", "start", "⚡ Escaneando perfiles y mercado...")
             
             task_biz = run_in_threadpool(scrape_url, business_url)
             task_comp = run_in_threadpool(scrape_url, competitor_url)
@@ -266,7 +258,7 @@ async def analyze(
 
             pil_images = []
             if images:
-                yield sse("scraping", "progress", "📸 Procesando fotografías...")
+                yield sse("scraping", "progress", "📸 Optimizando imágenes adjuntas...")
                 for img in images:
                     if img.content_type and img.content_type.startswith("image/"):
                         contents = await img.read()
@@ -274,19 +266,21 @@ async def analyze(
                             optimized_img = await run_in_threadpool(optimize_image, contents)
                             pil_images.append(optimized_img)
 
-            yield sse("estrategia", "start", "🧠 Generando estrategia y carrusel...")
-            campana = await run_in_threadpool(generate_campaign_with_fallback, business, competitor, angulo, pil_images)
+            yield sse("estrategia", "start", "🧠 Auditando competencia y armando estrategia...")
+            campana = await run_in_threadpool(generate_campaign_fast, business, competitor, angulo, pil_images)
 
-            yield sse("estrategia", "done", "📊 ¡Dashboard generado!", campana)
+            # ENVIAR DASHBOARD ESTRUCTURAL DE INMEDIATO
+            yield sse("estrategia", "done", "📊 ¡Estrategia y estructura de carrusel listas!", campana)
 
             total = len(campana["carrusel_placas"])
             for i, placa in enumerate(campana["carrusel_placas"]):
                 image_url = build_pollinations_url(placa["image_prompt"])
                 
+                # Emitir cada placa instantáneamente
                 yield sse(
                     "imagen",
                     "done",
-                    f"✨ Placa {i + 1}/{total} lista para cargar.",
+                    f"✨ Generando placa HD {i + 1}/{total}...",
                     {
                         "index": i,
                         "total": total,
@@ -298,11 +292,11 @@ async def analyze(
                     }
                 )
 
-            yield sse("completo", "done", "🚀 Proceso finalizado.", {"nombre_campana": campana["nombre_campana"]})
+            yield sse("completo", "done", "🚀 Auditoría y carrusel completados con éxito.", {"nombre_campana": campana["nombre_campana"]})
 
         except Exception as exc:
             log.exception("Error en proceso AdVance AI")
-            yield sse("error", "error", f"⚠️ Error: {str(exc)}")
+            yield sse("error", "error", f"⚠️ {str(exc)}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
