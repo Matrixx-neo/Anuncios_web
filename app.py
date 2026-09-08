@@ -183,11 +183,11 @@ COMPETIDOR DIRECTO ({competitor['url']}):
 {linea_angulo}
 
 INSTRUCCIONES CLAVE:
-1. Realiza una auditoría comparativa profunda (Métricas, FODA cruzado y oportunidades tácticas).
+1. Realiza una auditoría comparativa profunda. En las métricas comparativas (engagement, calidad_contenido, frecuencia), CADA UNA debe ser un objeto con las llaves 'tu_negocio' (entero de 1 a 100) y 'competencia' (entero de 1 a 100).
 2. Diseña un plan de contenido semanal ejecutable (Lunes, Miércoles y Viernes).
 3. Si hay imágenes adjuntas del producto, analiza su empaque y colores para mantener coherencia estética.
 4. Genera un carrusel estratégico de EXACTAMENTE 5 placas (Gancho, Problema, Solución, Beneficios, CTA).
-5. Cada 'image_prompt' DEBE estar en INGLÉS y especificar claramente el producto/rubro real en estilo fotográfico comercial: 'Professional product photography, sharp focus, 8k resolution, studio soft lighting, pristine detail'. Sin textos ni letras dentro de la imagen.
+5. Cada 'image_prompt' DEBE estar en INGLÉS y especificar claramente el producto real en estilo fotográfico comercial: 'Professional commercial photography, sharp focus, 8k resolution, studio lighting, pristine detail'. Sin texto en la imagen.
 """
 
     model = genai.GenerativeModel(GEMINI_MODEL)
@@ -207,10 +207,10 @@ INSTRUCCIONES CLAVE:
 
 def build_pollinations_url(prompt: str, fallback_text: str = "product") -> str:
     base_prompt = (prompt or fallback_text).strip()
-    hd_prompt = f"{base_prompt}, high resolution, ultra detailed 8k, professional studio product shot, cinematic lighting"
+    hd_prompt = f"{base_prompt}, clean background, professional product photography, 8k, detailed, photorealistic"
     encoded = urllib.parse.quote(hd_prompt)
-    seed = random.randint(1, 999_999)
-    return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=1080&height=1350&nologo=true&enhance=true&quality=100&seed={seed}"
+    seed = random.randint(1000, 999999)
+    return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=800&height=1000&nologo=true&seed={seed}"
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -229,13 +229,13 @@ async def analyze(
 
     async def event_stream():
         try:
-            yield sse("scraping", "start", "🔍 Escaneando perfiles y extrayendo ventajas competitivas...")
+            yield sse("scraping", "start", "🔍 Analizando perfiles y mercado...")
             business = await run_in_threadpool(scrape_url, business_url)
             competitor = await run_in_threadpool(scrape_url, competitor_url)
 
             pil_images = []
             if images:
-                yield sse("scraping", "progress", "📸 Procesando y optimizando fotos del producto...")
+                yield sse("scraping", "progress", "📸 Procesando imágenes adjuntas...")
                 for img in images:
                     if img.content_type and img.content_type.startswith("image/"):
                         contents = await img.read()
@@ -243,24 +243,19 @@ async def analyze(
                             optimized_img = await run_in_threadpool(optimize_image, contents)
                             pil_images.append(optimized_img)
 
-            yield sse("scraping", "done", "🔍 Análisis de datos inicial completado.")
+            yield sse("scraping", "done", "🔍 Análisis inicial listo.")
 
-            yield sse("estrategia", "start", "🧠 Generando matriz FODA, métricas y guión de carrusel HD...")
+            yield sse("estrategia", "start", "🧠 Generando auditoría, FODA y carrusel...")
             campana = await run_in_threadpool(generate_campaign, business, competitor, angulo, pil_images)
 
-            yield sse(
-                "estrategia",
-                "done",
-                "📊 Auditoría estratégica lista.",
-                campana
-            )
+            yield sse("estrategia", "done", "📊 Estrategia generada.", campana)
 
             total = len(campana["carrusel_placas"])
             for i, placa in enumerate(campana["carrusel_placas"]):
                 yield sse(
                     "imagen",
                     "start",
-                    f"🎨 Diseñando placa HD {i + 1}/{total}...",
+                    f"🎨 Creando imagen {i + 1}/{total}...",
                     {
                         "index": i,
                         "total": total,
@@ -270,30 +265,29 @@ async def analyze(
                     }
                 )
 
-                # Generación secuencial diferida para evitar sobrecargar Pollinations
                 image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
                 
-                # Pausa estratégica para dar estabilidad al API visual
-                await asyncio.sleep(1.5)
+                # Pausa de 2 segundos para dar respiro al renderizador
+                await asyncio.sleep(2.0)
 
                 yield sse(
                     "imagen",
                     "done",
-                    f"✨ Placa {i + 1}/{total} renderizada con éxito.",
+                    f"✨ Placa {i + 1}/{total} procesada.",
                     {"index": i, "image_url": image_url}
                 )
 
-            yield sse("completo", "done", "🚀 Estrategia y carrusel HD listos.", {"nombre_campana": campana["nombre_campana"]})
+            yield sse("completo", "done", "🚀 Proceso finalizado.", {"nombre_campana": campana["nombre_campana"]})
 
         except Exception as exc:
-            log.exception("Error en pipeline AdVance AI")
+            log.exception("Error en AdVance AI")
             yield sse("error", "error", f"⚠️ Error: {str(exc)}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": "AdVance AI", "gemini_configurado": bool(GEMINI_API_KEY)}
+    return {"status": "ok", "app": "AdVance AI"}
 
 if __name__ == "__main__":
     import uvicorn
