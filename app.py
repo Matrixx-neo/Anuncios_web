@@ -1,16 +1,15 @@
 """
-AdGenius — SaaS de publicidad generada por IA (versión Enterprise Ready)
+AdGenius — Dashboard SaaS de publicidad e inteligencia competitiva con IA
 =========================================================================
 
 Instalación:
-    pip install fastapi "uvicorn[standard]" httpx beautifulsoup4 jinja2 \
-                google-generativeai fal-client python-multipart
+    pip install fastapi "uvicorn[standard]" httpx beautifulsoup4 jinja2 google-generativeai python-multipart
 
 Variables de entorno (Render -> Environment):
     GEMINI_API_KEY   -> clave de Google AI Studio
-    FAL_KEY          -> clave de Fal.ai (opcional: si falta, se usan placeholders)
     GEMINI_MODEL     -> por defecto "gemini-2.5-flash"
-    FAL_FLUX_MODEL   -> por defecto "fal-ai/flux/schnell"
+
+Las imágenes se generan con Pollinations.ai (modelo Flux), sin API key ni costo.
 
 Ejecutar local:
     python app.py
@@ -18,9 +17,11 @@ Render (Start Command):
     uvicorn app:app --host 0.0.0.0 --port $PORT
 """
 
+import asyncio
 import json
 import logging
 import os
+import random
 import urllib.parse
 from typing import Optional
 from urllib.parse import urlparse
@@ -35,11 +36,6 @@ from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from pydantic import BaseModel, Field
 
-try:
-    import fal_client
-except ImportError:
-    fal_client = None
-
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("adgenius")
 
@@ -48,15 +44,12 @@ log = logging.getLogger("adgenius")
 # --------------------------------------------------------------------------------------
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-FAL_KEY = os.getenv("FAL_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-FAL_FLUX_MODEL = os.getenv("FAL_FLUX_MODEL", "fal-ai/flux/schnell")
 SCRAPE_TIMEOUT = 4.0  # segundos, estricto — nunca debe congelar la app
+POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-if FAL_KEY:
-    os.environ.setdefault("FAL_KEY", FAL_KEY)
 
 app = FastAPI(title="AdGenius API")
 templates = Jinja2Templates(directory="templates")
@@ -144,25 +137,50 @@ def scrape_url(raw_url: str) -> dict:
 
 
 # --------------------------------------------------------------------------------------
-# Módulos de IA (Gemini) — análisis estratégico y copywriting de campaña
+# Módulo de IA (Gemini) — inteligencia competitiva + estrategia + copywriting en UNA sola llamada
 # --------------------------------------------------------------------------------------
 
-ANALYSIS_SCHEMA = {
+_METRICA = {
     "type": "object",
-    "properties": {
-        "puntos_fuertes": {"type": "array", "items": {"type": "string"}},
-        "oportunidad_clave": {"type": "string"},
-        "tono_voz_sugerido": {"type": "string"},
-    },
-    "required": ["puntos_fuertes", "oportunidad_clave", "tono_voz_sugerido"],
+    "properties": {"tu_negocio": {"type": "integer"}, "competencia": {"type": "integer"}},
+    "required": ["tu_negocio", "competencia"],
 }
 
-STRATEGY_SCHEMA = {
+_DIA_PLAN = {
+    "type": "object",
+    "properties": {"idea": {"type": "string"}, "objetivo": {"type": "string"}},
+    "required": ["idea", "objetivo"],
+}
+
+CAMPAIGN_SCHEMA = {
     "type": "object",
     "properties": {
         "nombre_campana": {"type": "string"},
-        "hashtags": {"type": "array", "items": {"type": "string"}},
-        "placas": {
+        "score_competencia": {"type": "integer", "description": "0 a 100, dominancia de mercado del negocio propio frente al rival"},
+        "metricas_comparativas": {
+            "type": "object",
+            "properties": {
+                "engagement": _METRICA,
+                "calidad_contenido": _METRICA,
+                "frecuencia": _METRICA,
+            },
+            "required": ["engagement", "calidad_contenido", "frecuencia"],
+        },
+        "matriz_swot": {
+            "type": "object",
+            "properties": {
+                "fortalezas_rival": {"type": "array", "items": {"type": "string"}},
+                "puntos_debiles_rival": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": ["fortalezas_rival", "puntos_debiles_rival"],
+        },
+        "plan_semanal": {
+            "type": "object",
+            "properties": {"lunes": _DIA_PLAN, "miercoles": _DIA_PLAN, "viernes": _DIA_PLAN},
+            "required": ["lunes", "miercoles", "viernes"],
+        },
+        "recomendaciones_clave": {"type": "array", "items": {"type": "string"}},
+        "carrusel_placas": {
             "type": "array",
             "items": {
                 "type": "object",
@@ -170,36 +188,29 @@ STRATEGY_SCHEMA = {
                     "tipo": {"type": "string", "enum": ["Gancho", "Beneficio", "CTA"]},
                     "titulo": {"type": "string"},
                     "copy": {"type": "string"},
+                    "hashtags": {"type": "array", "items": {"type": "string"}},
                     "image_prompt": {
                         "type": "string",
-                        "description": "Prompt en inglés, muy visual y detallado, para imagen fotorrealista de producto",
+                        "description": "Prompt en inglés, hiperespecífico y fotorrealista para Flux",
                     },
                 },
-                "required": ["tipo", "titulo", "copy", "image_prompt"],
+                "required": ["tipo", "titulo", "copy", "hashtags", "image_prompt"],
             },
         },
     },
-    "required": ["nombre_campana", "hashtags", "placas"],
+    "required": [
+        "nombre_campana", "score_competencia", "metricas_comparativas",
+        "matriz_swot", "plan_semanal", "recomendaciones_clave", "carrusel_placas",
+    ],
 }
 
 
-def _gemini_json(prompt: str, schema: dict) -> dict:
+def generate_campaign(business: dict, competitor: dict) -> dict:
     if not GEMINI_API_KEY:
         raise RuntimeError("Falta configurar la variable de entorno GEMINI_API_KEY")
-    model = genai.GenerativeModel(GEMINI_MODEL)
-    response = model.generate_content(
-        prompt,
-        generation_config={
-            "response_mime_type": "application/json",
-            "response_schema": schema,
-            "temperature": 0.8,
-        },
-    )
-    return json.loads(response.text)
 
-
-def analyze_competitor(business: dict, competitor: dict) -> dict:
-    prompt = f"""Eres un estratega senior de marketing digital y publicidad performance.
+    prompt = f"""Eres un estratega senior de marketing digital, analista de inteligencia competitiva y director
+creativo publicitario para carruseles de alto rendimiento en Instagram/TikTok Ads.
 
 NEGOCIO PROPIO ({business['url']}):
 {business['content']}
@@ -207,81 +218,55 @@ NEGOCIO PROPIO ({business['url']}):
 COMPETIDOR A ANALIZAR ({competitor['url']}):
 {competitor['content']}
 
-Responde en JSON con:
-- puntos_fuertes: 3 a 5 puntos fuertes o ganchos comerciales que el competidor usa bien.
-- oportunidad_clave: la oportunidad más contundente que el negocio propio debería explotar frente a este competidor.
-- tono_voz_sugerido: el tono de voz que el NEGOCIO PROPIO debería usar en su campaña para diferenciarse (una frase).
-"""
-    return _gemini_json(prompt, ANALYSIS_SCHEMA)
-
-
-def generate_strategy(business: dict, analysis: dict) -> dict:
-    prompt = f"""Eres un director creativo publicitario experto en carruseles de alto rendimiento para Instagram/TikTok Ads.
-
-NEGOCIO PROPIO ({business['url']}):
-{business['content']}
-
-ANÁLISIS ESTRATÉGICO:
-{json.dumps(analysis, ensure_ascii=False)}
-
-Diseña una campaña de carrusel de exactamente 3 placas explotando la "oportunidad_clave" y usando el
-"tono_voz_sugerido". Responde en JSON con:
+Genera un análisis y campaña completos en JSON con:
 - nombre_campana: nombre corto y memorable de la campaña.
-- hashtags: 6 a 8 hashtags relevantes en español, sin espacios, con #.
-- placas: array de exactamente 3 objetos en este orden:
+- score_competencia: entero 0-100 que representa qué tan bien posicionado está el negocio propio frente al rival
+  (más alto = mejor posicionado). Sé realista y variado, no siempre uses 50.
+- metricas_comparativas: para engagement, calidad_contenido y frecuencia, un puntaje 0-100 estimado para
+  "tu_negocio" y para "competencia" en cada una, basado en el contenido analizado.
+- matriz_swot: fortalezas_rival (3 a 4 puntos fuertes del competidor) y puntos_debiles_rival (3 a 4 debilidades
+  u oportunidades que el negocio propio puede explotar).
+- plan_semanal: una idea táctica concreta y su objetivo de negocio para lunes, miércoles y viernes.
+- recomendaciones_clave: exactamente 3 acciones inmediatas y accionables para el negocio propio.
+- carrusel_placas: array de exactamente 3 objetos en este orden:
     1) tipo="Gancho": detiene el scroll, plantea el problema o deseo.
     2) tipo="Beneficio": comunica el valor diferencial concreto.
     3) tipo="CTA": llamado a la acción claro y urgente.
   Cada placa necesita:
     - titulo: headline corto para sobreponer en la imagen (máx 8 palabras, en español).
     - copy: copy de apoyo para el pie de foto (1-2 frases, en español).
-    - image_prompt: prompt EN INGLÉS, extremadamente descriptivo, para imagen publicitaria fotorrealista
-      3D/producto de altísima calidad (estilo comercial, iluminación de estudio, 8k, composición profesional).
-      No incluyas texto ni logos en la descripción de la imagen.
+    - hashtags: 4 a 6 hashtags relevantes en español, con #, específicos de esa placa.
+    - image_prompt: prompt EN INGLÉS, hiperespecífico, para una imagen publicitaria fotorrealista: describe
+      producto/escena, iluminación de estudio profesional ("professional studio lighting"), lente 85mm
+      ("shot on 85mm lens"), altísimo detalle ("hyperdetailed, 8k"), composición comercial premium.
+      No menciones texto, letras ni logos dentro de la imagen.
 """
-    return _gemini_json(prompt, STRATEGY_SCHEMA)
-
-
-# --------------------------------------------------------------------------------------
-# Módulo Visual — Flux.1 vía Fal.ai, con fallback a placeholder premium
-# --------------------------------------------------------------------------------------
-
-
-def placeholder_image(texto: str) -> str:
-    txt = urllib.parse.quote((texto or "AdGenius")[:40])
-    return f"https://placehold.co/1024x1024/1e1b2e/818cf8?text={txt}&font=raleway"
-
-
-def generate_image(prompt: str, fallback_text: str) -> dict:
-    """Genera una imagen fotorrealista vía Fal.ai/Flux. Nunca lanza excepción:
-    siempre devuelve una URL válida (real o placeholder) más el detalle exacto
-    del error si algo falló, para que el frontend pueda mostrarlo en el SSE."""
-    if not FAL_KEY:
-        return {"image_url": placeholder_image(fallback_text), "placeholder": True, "error": "FAL_KEY no está configurada en las variables de entorno."}
-    if fal_client is None:
-        return {"image_url": placeholder_image(fallback_text), "placeholder": True, "error": "El paquete 'fal-client' no está instalado (pip install fal-client)."}
-
-    full_prompt = (
-        f"{prompt}, photorealistic advertising photography, commercial product render, "
-        f"studio lighting, ultra sharp focus, 8k, high-end ad campaign, no text, no watermark, no logo"
+    model = genai.GenerativeModel(GEMINI_MODEL)
+    response = model.generate_content(
+        prompt,
+        generation_config={
+            "response_mime_type": "application/json",
+            "response_schema": CAMPAIGN_SCHEMA,
+            "temperature": 0.85,
+        },
     )
-    try:
-        result = fal_client.subscribe(
-            FAL_FLUX_MODEL,
-            arguments={
-                "prompt": full_prompt,
-                "image_size": "square_hd",
-                "num_images": 1,
-                "enable_safety_checker": True,
-            },
-        )
-        images = result.get("images") or []
-        if not images or not images[0].get("url"):
-            return {"image_url": placeholder_image(fallback_text), "placeholder": True, "error": f"Fal.ai respondió sin imágenes: {result}"[:300]}
-        return {"image_url": images[0]["url"], "placeholder": False, "error": None}
-    except Exception as exc:  # noqa: BLE001 — jamás rompe la app: placeholder + motivo exacto
-        log.warning("Fal.ai falló para el modelo %s: %s", FAL_FLUX_MODEL, exc)
-        return {"image_url": placeholder_image(fallback_text), "placeholder": True, "error": f"{type(exc).__name__}: {exc}"[:300]}
+    return json.loads(response.text)
+
+
+# --------------------------------------------------------------------------------------
+# Módulo Visual — Pollinations.ai (Flux), gratuito y sin API key
+# --------------------------------------------------------------------------------------
+
+
+def build_pollinations_url(prompt: str, fallback_text: str = "AdGenius") -> str:
+    texto = (prompt or fallback_text).strip()
+    prompt_enriquecido = (
+        f"{texto}, professional studio lighting, shot on 85mm lens, hyperdetailed, 8k, "
+        f"photorealistic commercial advertising photography, no printed text, no watermark, no logo"
+    )
+    encoded = urllib.parse.quote(prompt_enriquecido)
+    seed = random.randint(1, 999_999)
+    return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=1080&height=1350&nologo=true&seed={seed}"
 
 
 # --------------------------------------------------------------------------------------
@@ -308,37 +293,36 @@ async def analyze(payload: AnalyzeRequest):
             yield sse("scraping", "done", "🔍 Marca y competencia identificadas.",
                        {"business_title": business["title"], "competitor_title": competitor["title"]})
 
-            yield sse("analisis", "start", "🧠 Analizando ganchos comerciales y ángulo estratégico con IA...")
-            analysis = await run_in_threadpool(analyze_competitor, business, competitor)
-            yield sse("analisis", "done", "🧠 Análisis estratégico completo.", analysis)
-
-            yield sse("estrategia", "start", "✍️ Redactando copies de alta conversión y estructurando carrusel...")
-            strategy = await run_in_threadpool(generate_strategy, business, analysis)
-            yield sse("estrategia", "done", "✍️ Estrategia de campaña lista.",
-                       {"nombre_campana": strategy["nombre_campana"], "hashtags": strategy["hashtags"]})
+            yield sse("estrategia", "start", "🧠 Generando análisis competitivo, métricas y estrategia con IA...")
+            campana = await run_in_threadpool(generate_campaign, business, competitor)
+            yield sse("estrategia", "done", "🧠 Estrategia, métricas y plan semanal listos.", {
+                "nombre_campana": campana["nombre_campana"],
+                "score_competencia": campana["score_competencia"],
+                "metricas_comparativas": campana["metricas_comparativas"],
+                "matriz_swot": campana["matriz_swot"],
+                "plan_semanal": campana["plan_semanal"],
+                "recomendaciones_clave": campana["recomendaciones_clave"],
+            })
 
             placas_finales = []
-            total = len(strategy["placas"])
-            for i, placa in enumerate(strategy["placas"]):
-                yield sse("imagen", "start", f"🎨 Generando imágenes fotorrealistas de producto (Placa {i + 1}/{total})...",
-                           {"index": i, "tipo": placa["tipo"], "titulo": placa["titulo"]})
-                resultado_imagen = await run_in_threadpool(generate_image, placa["image_prompt"], placa["titulo"])
-                placa_final = {**placa, "image_url": resultado_imagen["image_url"]}
+            hashtags_totales = []
+            total = len(campana["carrusel_placas"])
+            for i, placa in enumerate(campana["carrusel_placas"]):
+                yield sse("imagen", "start", f"🎨 Renderizando imagen fotorrealista con Pollinations.ai (Placa {i + 1}/{total})...",
+                           {"index": i, "tipo": placa["tipo"], "titulo": placa["titulo"], "hashtags": placa["hashtags"]})
+                await asyncio.sleep(0.35)  # pacing visual: construir la URL es instantáneo
+                image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
+                placa_final = {**placa, "image_url": image_url}
                 placas_finales.append(placa_final)
-                mensaje_placa = f"🎨 Placa {i + 1}/{total} generada." if not resultado_imagen["error"] else \
-                    f"⚠️ Placa {i + 1}/{total}: usando imagen de respaldo ({resultado_imagen['error']})"
-                yield sse("imagen", "done", mensaje_placa, {
-                    "index": i,
-                    "image_url": resultado_imagen["image_url"],
-                    "placeholder": resultado_imagen["placeholder"],
-                    "error": resultado_imagen["error"],
-                })
+                for h in placa["hashtags"]:
+                    if h not in hashtags_totales:
+                        hashtags_totales.append(h)
+                yield sse("imagen", "done", f"🎨 Placa {i + 1}/{total} lista.", {"index": i, "image_url": image_url})
 
             yield sse("completo", "done", "✨ Campaña lista para lanzar.", {
-                "nombre_campana": strategy["nombre_campana"],
-                "hashtags": strategy["hashtags"],
+                "nombre_campana": campana["nombre_campana"],
+                "hashtags": hashtags_totales,
                 "placas": placas_finales,
-                "analisis": analysis,
             })
         except Exception as exc:  # noqa: BLE001
             log.exception("Error en el pipeline de análisis")
@@ -353,9 +337,7 @@ async def health():
         "status": "ok",
         "gemini_configurado": bool(GEMINI_API_KEY),
         "gemini_modelo": GEMINI_MODEL,
-        "fal_configurado": bool(FAL_KEY),
-        "fal_client_instalado": fal_client is not None,
-        "fal_modelo": FAL_FLUX_MODEL,
+        "motor_imagenes": "pollinations.ai (flux, gratuito, sin API key)",
     }
 
 

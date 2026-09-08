@@ -3,21 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AdGenius — Publicidad generada por IA</title>
+<title>AdGenius — Dashboard de publicidad e inteligencia competitiva</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
         fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Plus Jakarta Sans', 'sans-serif'] },
-        colors: {
-          base: '#09090f',
-          panel: '#12121c',
-          indigo: '#6366f1',
-          violet: '#8b5cf6',
-        },
+        colors: { base: '#09090f', panel: '#12121c', indigo: '#6366f1', violet: '#8b5cf6' },
         boxShadow: {
           glow: '0 0 40px -8px rgba(99,102,241,0.5)',
           glowSoft: '0 0 24px -6px rgba(139,92,246,0.35)',
@@ -37,17 +33,10 @@
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
 
   @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
-  .skeleton {
-    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.1) 37%, rgba(255,255,255,0.04) 63%);
-    background-size: 800px 100%;
-    animation: shimmer 1.6s linear infinite;
-  }
+  .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.1) 37%, rgba(255,255,255,0.04) 63%); background-size: 800px 100%; animation: shimmer 1.6s linear infinite; }
 
   @keyframes barGlow { 0% { background-position: 0 0; } 100% { background-position: 40px 0; } }
-  .bar-glow {
-    background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 10px, transparent 10px 20px);
-    animation: barGlow 1s linear infinite;
-  }
+  .bar-glow { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 10px, transparent 10px 20px); animation: barGlow 1s linear infinite; }
 
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { animation: spin 0.8s linear infinite; }
@@ -57,6 +46,9 @@
 
   .fade-in { animation: fadeIn .45s ease both; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .tab-btn { border-bottom: 2px solid transparent; }
+  .tab-btn.activo { border-color: #6366f1; color: #fff; text-shadow: 0 0 18px rgba(99,102,241,0.6); }
 </style>
 </head>
 <body class="min-h-screen text-slate-100 font-sans antialiased">
@@ -70,20 +62,20 @@
       <span class="text-lg font-bold tracking-tight font-display">AdGenius</span>
       <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo bg-indigo/10 border border-indigo/30 rounded-full px-2 py-0.5 ml-1">Pro</span>
     </div>
-    <span class="text-sm text-slate-400 hidden sm:block">Análisis de competencia + generación publicitaria con IA</span>
+    <span class="text-sm text-slate-400 hidden sm:block">Dashboard de inteligencia competitiva + publicidad con IA</span>
   </header>
 
   <!-- Hero + formulario -->
   <section class="grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center mb-16">
     <div>
       <h1 class="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight font-display">
-        Convierte cualquier URL en una
-        <span class="bg-gradient-to-r from-indigo to-violet bg-clip-text text-transparent">campaña publicitaria</span>
-        lista para publicar
+        Convierte cualquier URL en un
+        <span class="bg-gradient-to-r from-indigo to-violet bg-clip-text text-transparent">dashboard de ataque</span>
+        publicitario
       </h1>
       <p class="mt-5 text-slate-400 text-lg max-w-lg">
-        Pega tu sitio o red social junto al de un competidor. La IA detecta su ángulo estratégico, encuentra tu
-        oportunidad diferencial y arma un carrusel de 3 placas con copys, hashtags e imágenes fotorrealistas.
+        Pega tu sitio o red social junto al de un competidor. La IA arma tu score competitivo, métricas
+        comparativas, matriz SWOT, plan semanal y un carrusel de 3 placas con imágenes fotorrealistas gratis.
       </p>
     </div>
 
@@ -121,24 +113,55 @@
     <div class="flex flex-wrap gap-y-3 gap-x-6 text-xs" id="pasos"></div>
   </section>
 
-  <!-- Análisis estratégico -->
-  <section id="seccion-analisis" class="hidden grid sm:grid-cols-2 md:grid-cols-3 gap-5 mb-10 fade-in">
-    <div class="glass rounded-2xl p-6">
-      <h3 class="font-semibold text-indigo mb-3 text-sm uppercase tracking-wide">Puntos fuertes del competidor</h3>
-      <ul id="lista-puntos-fuertes" class="space-y-2 text-sm text-slate-300"></ul>
+  <!-- Tabs -->
+  <nav id="tabs" class="hidden flex gap-6 border-b border-white/10 mb-8 text-sm font-medium text-slate-400 fade-in">
+    <button data-tab="dashboard" class="tab-btn activo pb-3 px-1 transition">📊 Dashboard Interactivo &amp; Estrategia</button>
+    <button data-tab="carrusel" class="tab-btn pb-3 px-1 transition">🎨 Carrusel de Anuncios HD</button>
+  </nav>
+
+  <!-- TAB: Dashboard -->
+  <section id="tab-dashboard" class="hidden mb-16 fade-in">
+    <div class="grid md:grid-cols-2 gap-5 mb-5">
+      <div class="glass rounded-2xl p-6 flex flex-col items-center">
+        <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-3 self-start">Score de dominancia competitiva</h3>
+        <div class="relative w-48 h-48">
+          <canvas id="chart-score"></canvas>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span id="score-numero" class="text-3xl font-bold font-display">--%</span>
+            <span class="text-[10px] text-slate-400 uppercase tracking-wide">vs. competencia</span>
+          </div>
+        </div>
+      </div>
+      <div class="glass rounded-2xl p-6">
+        <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-3">Métricas comparativas</h3>
+        <canvas id="chart-comparativo" height="190"></canvas>
+      </div>
     </div>
-    <div class="glass rounded-2xl p-6">
-      <h3 class="font-semibold text-violet mb-3 text-sm uppercase tracking-wide">Oportunidad clave</h3>
-      <p id="texto-oportunidad" class="text-sm text-slate-300 leading-relaxed"></p>
+
+    <div class="grid md:grid-cols-2 gap-5 mb-5">
+      <div class="glass rounded-2xl p-6">
+        <h3 class="font-semibold text-indigo mb-3 text-sm uppercase tracking-wide">💪 Fortalezas del rival</h3>
+        <ul id="lista-fortalezas-rival" class="space-y-2 text-sm text-slate-300"></ul>
+      </div>
+      <div class="glass rounded-2xl p-6 border-violet/30">
+        <h3 class="font-semibold text-violet mb-3 text-sm uppercase tracking-wide">🎯 Matriz de ataque — puntos débiles a explotar</h3>
+        <ul id="lista-debiles-rival" class="space-y-2 text-sm text-slate-300"></ul>
+      </div>
     </div>
+
+    <div class="glass rounded-2xl p-6 mb-5">
+      <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-4">📅 Plan táctico semanal</h3>
+      <div class="grid sm:grid-cols-3 gap-4" id="plan-semanal"></div>
+    </div>
+
     <div class="glass rounded-2xl p-6">
-      <h3 class="font-semibold text-emerald-400 mb-3 text-sm uppercase tracking-wide">Tono de voz sugerido</h3>
-      <p id="texto-tono" class="text-sm text-slate-300 leading-relaxed"></p>
+      <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-4">⚡ Recomendaciones clave</h3>
+      <ol id="lista-recomendaciones" class="space-y-3 text-sm text-slate-300"></ol>
     </div>
   </section>
 
-  <!-- Campaña / carrusel -->
-  <section id="seccion-campana" class="hidden mb-16 fade-in">
+  <!-- TAB: Carrusel -->
+  <section id="tab-carrusel" class="hidden mb-16 fade-in">
     <div class="flex items-baseline justify-between mb-5 flex-wrap gap-3">
       <h2 id="nombre-campana" class="text-2xl font-bold font-display"></h2>
       <button id="btn-copiar-hashtags" class="btn-press text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-full px-3 py-1.5 glass">
@@ -163,25 +186,32 @@ const mensajeActual = document.getElementById('mensaje-actual');
 const barraProgreso = document.getElementById('barra-progreso');
 const pasosEl = document.getElementById('pasos');
 
-const seccionAnalisis = document.getElementById('seccion-analisis');
-const listaPuntosFuertes = document.getElementById('lista-puntos-fuertes');
-const textoOportunidad = document.getElementById('texto-oportunidad');
-const textoTono = document.getElementById('texto-tono');
+const tabs = document.getElementById('tabs');
+const tabDashboard = document.getElementById('tab-dashboard');
+const tabCarrusel = document.getElementById('tab-carrusel');
 
-const seccionCampana = document.getElementById('seccion-campana');
 const nombreCampana = document.getElementById('nombre-campana');
 const hashtagsEl = document.getElementById('hashtags');
 const placasEl = document.getElementById('placas');
 
+let chartScore = null;
+let chartComparativo = null;
+
 const PASOS = [
   { key: 'scraping',   label: 'Scraping' },
-  { key: 'analisis',   label: 'Análisis IA' },
-  { key: 'estrategia', label: 'Copywriting' },
+  { key: 'estrategia', label: 'Estrategia IA' },
   { key: 'imagen-0',   label: 'Placa 1' },
   { key: 'imagen-1',   label: 'Placa 2' },
   { key: 'imagen-2',   label: 'Placa 3' },
   { key: 'completo',   label: 'Listo' },
 ];
+
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => activarTab(b.dataset.tab)));
+function activarTab(nombre) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('activo', b.dataset.tab === nombre));
+  tabDashboard.classList.toggle('hidden', nombre !== 'dashboard');
+  tabCarrusel.classList.toggle('hidden', nombre !== 'carrusel');
+}
 
 function pintarPasos(activaKey, hecho) {
   pasosEl.innerHTML = PASOS.map(p => {
@@ -191,13 +221,78 @@ function pintarPasos(activaKey, hecho) {
     const texto = completado || activo ? 'text-slate-100' : 'text-slate-500';
     const icono = completado ? '✓' : '';
     return `<div class="flex items-center gap-1.5">
-      <span class="w-2 h-2 rounded-full ${dot} flex items-center justify-center"></span>
+      <span class="w-2 h-2 rounded-full ${dot}"></span>
       <span class="${texto}">${icono ? icono + ' ' : ''}${p.label}</span>
     </div>`;
   }).join('');
   const idx = PASOS.findIndex(p => p.key === activaKey);
   const pct = Math.max(4, Math.round(((idx + 1) / PASOS.length) * 100));
   barraProgreso.style.width = `${pct}%`;
+}
+
+function renderCharts(data) {
+  const score = data.score_competencia;
+  document.getElementById('score-numero').textContent = `${score}%`;
+  if (chartScore) chartScore.destroy();
+  chartScore = new Chart(document.getElementById('chart-score'), {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [score, 100 - score],
+        backgroundColor: ['#6366f1', 'rgba(255,255,255,0.06)'],
+        borderWidth: 0,
+      }],
+    },
+    options: { cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 900 } },
+  });
+
+  const m = data.metricas_comparativas;
+  const etiquetas = ['Engagement', 'Calidad de contenido', 'Frecuencia'];
+  const claves = ['engagement', 'calidad_contenido', 'frecuencia'];
+  if (chartComparativo) chartComparativo.destroy();
+  chartComparativo = new Chart(document.getElementById('chart-comparativo'), {
+    type: 'bar',
+    data: {
+      labels: etiquetas,
+      datasets: [
+        { label: 'Tu negocio', data: claves.map(k => m[k].tu_negocio), backgroundColor: '#6366f1', borderRadius: 6 },
+        { label: 'Competencia', data: claves.map(k => m[k].competencia), backgroundColor: '#8b5cf6', borderRadius: 6 },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#cbd5e1' } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true, max: 100 },
+      },
+    },
+  });
+}
+
+function renderSwot(swot) {
+  document.getElementById('lista-fortalezas-rival').innerHTML =
+    swot.fortalezas_rival.map(f => `<li class="flex gap-2"><span class="text-indigo">→</span>${f}</li>`).join('');
+  document.getElementById('lista-debiles-rival').innerHTML =
+    swot.puntos_debiles_rival.map(d => `<li class="flex gap-2"><span class="text-violet">→</span>${d}</li>`).join('');
+}
+
+function renderPlanSemanal(plan) {
+  const dias = [['lunes', 'Lunes'], ['miercoles', 'Miércoles'], ['viernes', 'Viernes']];
+  document.getElementById('plan-semanal').innerHTML = dias.map(([key, label]) => `
+    <div class="glass rounded-xl p-4">
+      <span class="text-[10px] font-semibold uppercase tracking-wide text-indigo bg-indigo/10 border border-indigo/30 rounded-full px-2 py-0.5">${label}</span>
+      <p class="text-sm font-medium mt-2">${plan[key].idea}</p>
+      <p class="text-xs text-slate-400 mt-1">${plan[key].objetivo}</p>
+    </div>`).join('');
+}
+
+function renderRecomendaciones(lista) {
+  document.getElementById('lista-recomendaciones').innerHTML = lista.map((r, i) => `
+    <li class="flex gap-3">
+      <span class="shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-indigo to-violet text-white text-xs font-bold flex items-center justify-center">${i + 1}</span>
+      <span>${r}</span>
+    </li>`).join('');
 }
 
 function esqueletoPlaca(tipo, index) {
@@ -207,7 +302,7 @@ function esqueletoPlaca(tipo, index) {
       <span class="text-xs font-medium text-slate-300">tu_marca</span>
       <span class="ml-auto text-[10px] uppercase tracking-wide text-indigo/80 bg-indigo/10 rounded-full px-2 py-0.5">${tipo}</span>
     </div>
-    <div class="skeleton aspect-square"></div>
+    <div class="skeleton aspect-[4/5]"></div>
     <div class="p-4 flex-1 flex flex-col">
       <div class="h-4 w-3/4 bg-white/10 rounded skel-titulo"></div>
       <div class="h-3 w-full bg-white/5 rounded mt-3 skel-copy"></div>
@@ -236,6 +331,13 @@ async function descargarImagen(url, nombreArchivo, boton) {
   }
 }
 
+function copiarTexto(texto, boton) {
+  navigator.clipboard.writeText(texto);
+  const original = boton.textContent;
+  boton.textContent = '✓ Copiado';
+  setTimeout(() => { boton.textContent = original; }, 1500);
+}
+
 async function manejarEnvio(e) {
   e.preventDefault();
   formError.classList.add('hidden');
@@ -246,8 +348,9 @@ async function manejarEnvio(e) {
   btn.disabled = true;
   btnTexto.textContent = 'Generando campaña…';
   progreso.classList.remove('hidden');
-  seccionAnalisis.classList.add('hidden');
-  seccionCampana.classList.add('hidden');
+  tabs.classList.add('hidden');
+  tabDashboard.classList.add('hidden');
+  tabCarrusel.classList.add('hidden');
   placasEl.innerHTML = '';
   barraProgreso.style.width = '4%';
   const hecho = new Set();
@@ -269,10 +372,8 @@ async function manejarEnvio(e) {
       const { value, done } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-
       const bloques = buffer.split('\n\n');
       buffer = bloques.pop();
-
       for (const bloque of bloques) {
         const linea = bloque.split('\n').find(l => l.startsWith('data: '));
         if (!linea) continue;
@@ -288,13 +389,6 @@ async function manejarEnvio(e) {
   }
 }
 
-function copiarTexto(texto, boton) {
-  navigator.clipboard.writeText(texto);
-  const original = boton.textContent;
-  boton.textContent = '✓ Copiado';
-  setTimeout(() => { boton.textContent = original; }, 1500);
-}
-
 function procesarEvento(evento, hecho) {
   const { stage, status, mensaje, data } = evento;
   const key = stage === 'imagen' ? `imagen-${data.index}` : stage;
@@ -303,39 +397,39 @@ function procesarEvento(evento, hecho) {
   if (status === 'done') hecho.add(key);
   pintarPasos(key, hecho);
 
-  if (stage === 'analisis' && status === 'done') {
-    listaPuntosFuertes.innerHTML = data.puntos_fuertes.map(p => `<li class="flex gap-2"><span class="text-indigo">→</span>${p}</li>`).join('');
-    textoOportunidad.textContent = data.oportunidad_clave;
-    textoTono.textContent = data.tono_voz_sugerido;
-    seccionAnalisis.classList.remove('hidden');
-  }
-
   if (stage === 'estrategia' && status === 'done') {
+    tabs.classList.remove('hidden');
+    tabDashboard.classList.remove('hidden');
+    activarTab('dashboard');
+    renderCharts(data);
+    renderSwot(data.matriz_swot);
+    renderPlanSemanal(data.plan_semanal);
+    renderRecomendaciones(data.recomendaciones_clave);
     nombreCampana.textContent = data.nombre_campana;
-    hashtagsEl.innerHTML = data.hashtags.map(h => `<span class="glass rounded-full px-3 py-1">${h}</span>`).join('');
-    seccionCampana.classList.remove('hidden');
   }
 
   if (stage === 'imagen' && status === 'start') {
+    tabCarrusel.classList.remove('hidden');
     placasEl.insertAdjacentHTML('beforeend', esqueletoPlaca(data.tipo, data.index));
     const placa = document.getElementById(`placa-${data.index}`);
     const titulo = placa.querySelector('.skel-titulo');
     titulo.textContent = data.titulo;
     titulo.className = 'font-semibold text-sm';
+    if (data.hashtags?.length) {
+      placa.querySelector('.p-4').insertAdjacentHTML('beforeend',
+        `<div class="flex flex-wrap gap-1 mt-2">${data.hashtags.map(h => `<span class="text-[10px] text-violet/90">${h}</span>`).join(' ')}</div>`);
+    }
   }
 
   if (stage === 'imagen' && status === 'done') {
     const placa = document.getElementById(`placa-${data.index}`);
     if (!placa) return;
     const img = placa.querySelector('.skeleton');
-    if (img) img.outerHTML = `<img src="${data.image_url}" alt="Placa publicitaria" class="aspect-square w-full object-cover">`;
-    if (data.placeholder && data.error) {
-      placa.querySelector('.p-4').insertAdjacentHTML('afterbegin',
-        `<p class="text-[11px] text-amber-400/90 mb-2">⚠️ Imagen de respaldo — ${data.error}</p>`);
-    }
+    if (img) img.outerHTML = `<img src="${data.image_url}" alt="Placa publicitaria" class="aspect-[4/5] w-full object-cover" loading="lazy">`;
   }
 
   if (stage === 'completo' && status === 'done') {
+    hashtagsEl.innerHTML = data.hashtags.map(h => `<span class="glass rounded-full px-3 py-1">${h}</span>`).join('');
     data.placas.forEach((p, i) => {
       const placa = document.getElementById(`placa-${i}`);
       if (!placa) return;
@@ -344,8 +438,8 @@ function procesarEvento(evento, hecho) {
         copyEl.outerHTML = `<p class="text-xs text-slate-400 mt-2 leading-relaxed flex-1">${p.copy}</p>
           <div class="flex gap-2 mt-3">
             <button class="btn-press btn-copiar-copy flex-1 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5">📋 Copiar copy</button>
-            <button class="btn-press btn-descargar flex-1 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5">⬇️ Descargar HD</button>
-          </div>`;
+          </div>
+          <button class="btn-press btn-descargar mt-2 w-full text-xs font-semibold text-white bg-gradient-to-r from-indigo to-violet rounded-lg px-3 py-2 shadow-glowSoft">⬇️ Descargar Imagen HD</button>`;
         placa.querySelector('.btn-copiar-copy').addEventListener('click', (e) => copiarTexto(p.copy, e.target));
         placa.querySelector('.btn-descargar').addEventListener('click', (e) =>
           descargarImagen(p.image_url, `adgenius-placa-${i + 1}-${p.tipo}`.toLowerCase(), e.target));
