@@ -1,9 +1,8 @@
 fastapi
 uvicorn
-jinja2
-google-generativeai
-fal-client
 httpx
 beautifulsoup4
-pydantic
+google-generativeai
+jinja2
 python-multipart
+Pillow
