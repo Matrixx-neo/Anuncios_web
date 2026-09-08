@@ -6,3 +6,4 @@ fal-client
 httpx
 beautifulsoup4
 pydantic
+python-multipart
