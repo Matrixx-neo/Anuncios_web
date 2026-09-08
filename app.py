@@ -252,9 +252,14 @@ def placeholder_image(texto: str) -> str:
     return f"https://placehold.co/1024x1024/1e1b2e/818cf8?text={txt}&font=raleway"
 
 
-def generate_image(prompt: str, fallback_text: str) -> str:
-    if not FAL_KEY or fal_client is None:
-        return placeholder_image(fallback_text)
+def generate_image(prompt: str, fallback_text: str) -> dict:
+    """Genera una imagen fotorrealista vía Fal.ai/Flux. Nunca lanza excepción:
+    siempre devuelve una URL válida (real o placeholder) más el detalle exacto
+    del error si algo falló, para que el frontend pueda mostrarlo en el SSE."""
+    if not FAL_KEY:
+        return {"image_url": placeholder_image(fallback_text), "placeholder": True, "error": "FAL_KEY no está configurada en las variables de entorno."}
+    if fal_client is None:
+        return {"image_url": placeholder_image(fallback_text), "placeholder": True, "error": "El paquete 'fal-client' no está instalado (pip install fal-client)."}
 
     full_prompt = (
         f"{prompt}, photorealistic advertising photography, commercial product render, "
@@ -271,12 +276,12 @@ def generate_image(prompt: str, fallback_text: str) -> str:
             },
         )
         images = result.get("images") or []
-        if not images:
-            raise RuntimeError("Fal.ai no devolvió imágenes")
-        return images[0]["url"]
-    except Exception as exc:  # noqa: BLE001 — jamás rompe la app: placeholder de respaldo
-        log.warning("Fal.ai falló, usando placeholder: %s", exc)
-        return placeholder_image(fallback_text)
+        if not images or not images[0].get("url"):
+            return {"image_url": placeholder_image(fallback_text), "placeholder": True, "error": f"Fal.ai respondió sin imágenes: {result}"[:300]}
+        return {"image_url": images[0]["url"], "placeholder": False, "error": None}
+    except Exception as exc:  # noqa: BLE001 — jamás rompe la app: placeholder + motivo exacto
+        log.warning("Fal.ai falló para el modelo %s: %s", FAL_FLUX_MODEL, exc)
+        return {"image_url": placeholder_image(fallback_text), "placeholder": True, "error": f"{type(exc).__name__}: {exc}"[:300]}
 
 
 # --------------------------------------------------------------------------------------
@@ -317,10 +322,17 @@ async def analyze(payload: AnalyzeRequest):
             for i, placa in enumerate(strategy["placas"]):
                 yield sse("imagen", "start", f"🎨 Generando imágenes fotorrealistas de producto (Placa {i + 1}/{total})...",
                            {"index": i, "tipo": placa["tipo"], "titulo": placa["titulo"]})
-                image_url = await run_in_threadpool(generate_image, placa["image_prompt"], placa["titulo"])
-                placa_final = {**placa, "image_url": image_url}
+                resultado_imagen = await run_in_threadpool(generate_image, placa["image_prompt"], placa["titulo"])
+                placa_final = {**placa, "image_url": resultado_imagen["image_url"]}
                 placas_finales.append(placa_final)
-                yield sse("imagen", "done", f"🎨 Placa {i + 1}/{total} generada.", {"index": i, "image_url": image_url})
+                mensaje_placa = f"🎨 Placa {i + 1}/{total} generada." if not resultado_imagen["error"] else \
+                    f"⚠️ Placa {i + 1}/{total}: usando imagen de respaldo ({resultado_imagen['error']})"
+                yield sse("imagen", "done", mensaje_placa, {
+                    "index": i,
+                    "image_url": resultado_imagen["image_url"],
+                    "placeholder": resultado_imagen["placeholder"],
+                    "error": resultado_imagen["error"],
+                })
 
             yield sse("completo", "done", "✨ Campaña lista para lanzar.", {
                 "nombre_campana": strategy["nombre_campana"],
@@ -340,7 +352,10 @@ async def health():
     return {
         "status": "ok",
         "gemini_configurado": bool(GEMINI_API_KEY),
+        "gemini_modelo": GEMINI_MODEL,
         "fal_configurado": bool(FAL_KEY),
+        "fal_client_instalado": fal_client is not None,
+        "fal_modelo": FAL_FLUX_MODEL,
     }
 
 

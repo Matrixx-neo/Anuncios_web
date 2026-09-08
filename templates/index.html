@@ -61,7 +61,7 @@
 </head>
 <body class="min-h-screen text-slate-100 font-sans antialiased">
 
-<div class="max-w-6xl mx-auto px-6 py-10">
+<div class="max-w-6xl xl:max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-10">
 
   <!-- Encabezado -->
   <header class="flex items-center justify-between mb-14">
@@ -122,7 +122,7 @@
   </section>
 
   <!-- Análisis estratégico -->
-  <section id="seccion-analisis" class="hidden grid md:grid-cols-3 gap-5 mb-10 fade-in">
+  <section id="seccion-analisis" class="hidden grid sm:grid-cols-2 md:grid-cols-3 gap-5 mb-10 fade-in">
     <div class="glass rounded-2xl p-6">
       <h3 class="font-semibold text-indigo mb-3 text-sm uppercase tracking-wide">Puntos fuertes del competidor</h3>
       <ul id="lista-puntos-fuertes" class="space-y-2 text-sm text-slate-300"></ul>
@@ -145,8 +145,9 @@
         📋 Copiar hashtags
       </button>
     </div>
-    <div id="hashtags" class="flex flex-wrap gap-2 mb-6 text-xs text-violet"></div>
-    <div id="placas" class="grid md:grid-cols-3 gap-6"></div>
+    <div id="hashtags" class="flex flex-wrap gap-2 mb-3 text-xs text-violet"></div>
+    <p class="text-xs text-slate-500 mb-3 md:hidden">← Desliza para ver las 3 placas →</p>
+    <div id="placas" class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 -mx-6 px-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible"></div>
   </section>
 
 </div>
@@ -200,7 +201,7 @@ function pintarPasos(activaKey, hecho) {
 }
 
 function esqueletoPlaca(tipo, index) {
-  return `<div id="placa-${index}" class="glass rounded-2xl overflow-hidden flex flex-col">
+  return `<div id="placa-${index}" class="glass rounded-2xl overflow-hidden flex flex-col shrink-0 w-[82%] sm:w-[320px] md:w-auto snap-center">
     <div class="flex items-center gap-2 px-3 py-2 border-b border-white/5">
       <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo to-violet"></div>
       <span class="text-xs font-medium text-slate-300">tu_marca</span>
@@ -212,6 +213,27 @@ function esqueletoPlaca(tipo, index) {
       <div class="h-3 w-full bg-white/5 rounded mt-3 skel-copy"></div>
     </div>
   </div>`;
+}
+
+async function descargarImagen(url, nombreArchivo, boton) {
+  const textoOriginal = boton.textContent;
+  boton.textContent = '⏳ Descargando...';
+  try {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `${nombreArchivo}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    window.open(url, '_blank'); // fallback si el origen bloquea fetch (CORS)
+  } finally {
+    boton.textContent = textoOriginal;
+  }
 }
 
 async function manejarEnvio(e) {
@@ -307,6 +329,10 @@ function procesarEvento(evento, hecho) {
     if (!placa) return;
     const img = placa.querySelector('.skeleton');
     if (img) img.outerHTML = `<img src="${data.image_url}" alt="Placa publicitaria" class="aspect-square w-full object-cover">`;
+    if (data.placeholder && data.error) {
+      placa.querySelector('.p-4').insertAdjacentHTML('afterbegin',
+        `<p class="text-[11px] text-amber-400/90 mb-2">⚠️ Imagen de respaldo — ${data.error}</p>`);
+    }
   }
 
   if (stage === 'completo' && status === 'done') {
@@ -316,8 +342,13 @@ function procesarEvento(evento, hecho) {
       const copyEl = placa.querySelector('.skel-copy');
       if (copyEl) {
         copyEl.outerHTML = `<p class="text-xs text-slate-400 mt-2 leading-relaxed flex-1">${p.copy}</p>
-          <button class="btn-press btn-copiar-copy mt-3 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5 self-start">📋 Copiar copy</button>`;
+          <div class="flex gap-2 mt-3">
+            <button class="btn-press btn-copiar-copy flex-1 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5">📋 Copiar copy</button>
+            <button class="btn-press btn-descargar flex-1 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5">⬇️ Descargar HD</button>
+          </div>`;
         placa.querySelector('.btn-copiar-copy').addEventListener('click', (e) => copiarTexto(p.copy, e.target));
+        placa.querySelector('.btn-descargar').addEventListener('click', (e) =>
+          descargarImagen(p.image_url, `adgenius-placa-${i + 1}-${p.tipo}`.toLowerCase(), e.target));
       }
     });
   }
