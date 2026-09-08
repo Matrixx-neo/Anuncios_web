@@ -1,5 +1,5 @@
 """
-AdVance AI - SaaS Marketing Studio (Production Enterprise Edition)
+AdVance AI - SaaS Marketing Studio (Hyper-Contextual Image Edition)
 ===================================================================
 """
 
@@ -19,17 +19,13 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
-from PIL import Image
-import io
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("advance_ai")
 
-# MANEJO MULTI-KEY
 RAW_KEYS = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
 API_KEYS = [k.strip() for k in RAW_KEYS.split(",") if k.strip()]
 
-# Lista de modelos soportados en orden de preferencia (Gemini 3.7 / 3.6 / 3.5 / 2.5)
 MODEL_CANDIDATES = [
     "gemini-3.7-flash",
     "gemini-3.6-flash",
@@ -106,39 +102,53 @@ def scrape_url(raw_url: str) -> dict:
         return res
 
 def build_fallback_campaign(biz_name: str, comp_name: str, angulo: Optional[str]) -> dict:
-    """Respuesta de ultra-emergencia en caso de fallo masivo de APIs de IA"""
     return {
-        "nombre_campana": f"Estrategia de Impacto: {biz_name} vs {comp_name}",
-        "score_competencia": 85,
+        "nombre_campana": f"Estrategia Comercial: {biz_name}",
+        "score_competencia": 82,
         "metricas_comparativas": {
-            "engagement": {"tu_negocio": 78, "competencia": 82},
-            "calidad_contenido": {"tu_negocio": 85, "competencia": 80},
-            "frecuencia": {"tu_negocio": 70, "competencia": 88}
+            "engagement": {"tu_negocio": 82, "competencia": 74},
+            "calidad_contenido": {"tu_negocio": 88, "competencia": 70},
+            "frecuencia": {"tu_negocio": 65, "competencia": 85}
         },
         "matriz_swot": {
-            "fortalezas_propias": ["Propuesta única de valor", "Atención personalizada", "Producto destacado"],
-            "debilidades_propias": ["Menor frecuencia de publicación", "Poco contenido en formato Reel/Carrusel"],
-            "fortalezas_rival": ["Mayor volumen de publicaciones", "Comunidad activa"],
-            "puntos_debiles_rival": ["Llamados a la acción poco claros", "Diseño visual genérico"],
-            "estrategia_ataque": [f"Dominar el ángulo {angulo or 'Educativo'}", "Optimizar carruseles dinámicos de alta conversión"]
+            "fortalezas_propias": ["Propuesta artesanal y personalizada", "Enfoque educativo de alta calidad"],
+            "debilidades_propias": ["Cadencia de publicación variable"],
+            "fortalezas_rival": ["Volumen constante de historias"],
+            "puntos_debiles_rival": ["Contenido poco profundo o genérico"],
+            "estrategia_ataque": [f"Dominar el ángulo {angulo or 'Educativo'} con carruseles detallados"]
         },
         "plan_semanal": {
-            "lunes": {"idea": "Problema vs Solución con prueba visual", "objetivo": "Captar atención y generar guardados"},
-            "miercoles": {"idea": "Carrusel comparativo frente a alternativas", "objetivo": "Aumentar consideración y clics"},
-            "viernes": {"idea": "Oferta irresistible con llamado directo a la acción", "objetivo": "Ventas directas y mensajes"}
+            "lunes": {"idea": f"Demostración técnica o beneficios reales de {biz_name}", "objetivo": "Generar guardados"},
+            "miercoles": {"idea": "Comparativa directa: Método tradicional vs Tu Solución", "objetivo": "Atraer clientes potenciales"},
+            "viernes": {"idea": "Llamado a la acción con testimonio o proceso detrás de escena", "objetivo": "Ventas por DM"}
         },
-        "recomendaciones_clave": [
-            "Usar ganchos visuales en los primeros 2 segundos",
-            "Mantener una paleta de colores uniforme",
-            "Responder preguntas frecuentes en carruseles informativos"
-        ],
-        "hashtags": [f"#{biz_name.replace(' ', '')}", "#MarketingDigital", "#EstrategiaDeVentas", "#AnunciosEfectivos"],
+        "recomendaciones_clave": ["Mantener portadas visualmente limpias", "Usar fotos reales de producto"],
+        "hashtags": [f"#{biz_name.replace(' ', '')}", "#ProductosArtesanales", "#CalidadGarantizada", "#HechoAMano"],
         "carrusel_placas": [
-            {"tipo": "Gancho", "titulo": f"¿Por qué {biz_name} está transformando el mercado?", "descripcion": "Descubre el secreto que la competencia no quiere que veas.", "image_prompt": f"Minimalist professional photo representing {biz_name}, cinematic studio lighting, 8k resolution"},
-            {"tipo": "Problema", "titulo": "El error común que frena tus resultados", "descripcion": "La mayoría comete este fallo al elegir alternativas tradicionales.", "image_prompt": "Dramatic photo of product dilemma, sleek design, photorealistic, sharp focus"},
-            {"tipo": "Solucion", "titulo": "La Alternativa Superior", "descripcion": "Diseñado para darte el máximo rendimiento y calidad garantizada.", "image_prompt": f"Premium luxury product presentation for {biz_name}, vibrant background, 8k"},
-            {"tipo": "Beneficios", "titulo": "3 Razones para dar el paso hoy", "descripcion": "1. Calidad superior\n2. Atención directa\n3. Resultados comprobados.", "image_prompt": "Clean infographic aesthetic, product highlight, studio shot, photorealistic"},
-            {"tipo": "CTA", "titulo": "Haz tu pedido hoy mismo", "descripcion": "Escríbenos al privado o ingresa al enlace de nuestro perfil para empezar.", "image_prompt": "Call to action badge, vibrant colors, premium marketing design, 8k"}
+            {
+                "tipo": "Gancho",
+                "titulo": f"El secreto detrás de {biz_name}",
+                "descripcion": "Descubre lo que hace única a nuestra propuesta frente a opciones genéricas.",
+                "image_prompt": f"Commercial product shot of {biz_name}, natural lighting, organic ingredients background, high detailed resolution"
+            },
+            {
+                "tipo": "Problema",
+                "titulo": "Información o productos sin estructura",
+                "descripcion": "Muchos eligen opciones comerciales sin conocer los ingredientes reales.",
+                "image_prompt": f"Close up details of organic handcrafted materials for {biz_name}, cinematic studio setup"
+            },
+            {
+                "tipo": "Solucion",
+                "titulo": "Nuestro Proceso Único",
+                "descripcion": "Formulado paso a paso para garantizar la máxima calidad.",
+                "image_prompt": f"Elegant clean product display for {biz_name}, minimalist aesthetics, soft daylight"
+            },
+            {
+                "tipo": "CTA",
+                "titulo": "Adquiere el tuyo hoy",
+                "descripcion": "Haz tu pedido directamente por DM o visita nuestro catálogo completo.",
+                "image_prompt": f"Luxury ecommerce product packaging for {biz_name}, 8k photorealistic, premium lighting"
+            }
         ]
     }
 
@@ -159,24 +169,29 @@ def call_gemini_http(prompt: str, api_key: str, model_name: str) -> dict:
         return json.loads(raw_text)
 
 def generate_campaign_bulletproof(business: dict, competitor: dict, angulo: Optional[str] = None) -> dict:
-    prompt = f"""Eres el CMO principal de AdVance AI. Analiza los negocios y responde ÚNICAMENTE en JSON válido con el esquema especificado.
+    prompt = f"""Eres el CMO y Director de Arte principal de AdVance AI. Analiza estos negocios:
 
-NEGOCIO ({business['title']}):
+NEGOCIO PRINCIPAL ({business['title']}):
 {business['content']}
 
 COMPETIDOR ({competitor['title']}):
 {competitor['content']}
 
-ENFOQUE: {angulo or 'Comercial de alto impacto'}
+ENFOQUE: {angulo or 'Educativo/Comercial'}
 
-JSON Estructura requerida:
+REGLA CRÍTICA PARA "image_prompt":
+Debes crear descripciones fotográficas hiper-específicas EN INGLÉS sobre el PRODUCTO O SERVICIO REAL de ({business['title']}). 
+Ejemplo: Si es cosmética/jabones, describe "handmade natural soap bar, lavender and honey, organic texture, studio lighting". 
+NUNCA uses conceptos abstractos como "technology screen", "abstract background" o "logo design".
+
+Responde ÚNICAMENTE en JSON válido con esta estructura:
 {{
   "nombre_campana": "string",
-  "score_competencia": 85,
+  "score_competencia": 80,
   "metricas_comparativas": {{
-    "engagement": {{"tu_negocio": 80, "competencia": 75}},
-    "calidad_contenido": {{"tu_negocio": 85, "competencia": 70}},
-    "frecuencia": {{"tu_negocio": 70, "competencia": 90}}
+    "engagement": {{"tu_negocio": 82, "competencia": 74}},
+    "calidad_contenido": {{"tu_negocio": 88, "competencia": 70}},
+    "frecuencia": {{"tu_negocio": 65, "competencia": 85}}
   }},
   "matriz_swot": {{
     "fortalezas_propias": ["string"],
@@ -197,13 +212,12 @@ JSON Estructura requerida:
       "tipo": "Gancho",
       "titulo": "string",
       "descripcion": "string",
-      "image_prompt": "Short English prompt for photo generation (max 20 words)"
+      "image_prompt": "Hyper-realistic commercial photo description of the SPECIFIC product/service in English (e.g. handmade herbal soap on marble table, soft lighting)"
     }}
   ]
 }}
 """
 
-    # Probar cascada de claves y modelos
     for api_key in API_KEYS:
         for model in MODEL_CANDIDATES:
             try:
@@ -212,17 +226,16 @@ JSON Estructura requerida:
                 if res and "carrusel_placas" in res:
                     return res
             except Exception as e:
-                log.warning(f"Fallo modelo {model} con la llave actual: {e}")
+                log.warning(f"Fallo modelo {model}: {e}")
                 continue
 
-    # Si todo falla, usar fallback inteligente para que el producto SIEMPRE entregue resultados al usuario
-    log.error("⚠️ Todas las API Keys o Modelos fallaron. Activando modo Resiliencia Total.")
+    log.error("⚠️ Activando fallback hiper-contextual...")
     return build_fallback_campaign(business['title'], competitor['title'], angulo)
 
 def build_pollinations_url(prompt: str) -> str:
-    clean_prompt = f"Professional commercial product photo, {prompt}, 8k resolution, cinematic studio lighting"
+    clean_prompt = f"Professional product photography, {prompt}, 8k resolution, cinematic lighting, sharp focus, photo, photorealistic, no text, no logo"
     encoded = urllib.parse.quote(clean_prompt)
-    seed = random.randint(100, 99999)
+    seed = random.randint(1000, 999999)
     return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=800&height=1000&nologo=true&seed={seed}"
 
 @app.get("/", response_class=HTMLResponse)
@@ -247,20 +260,18 @@ async def analyze(
             task_comp = run_in_threadpool(scrape_url, competitor_url)
             business, competitor = await asyncio.gather(task_biz, task_comp)
 
-            yield sse("estrategia", "start", "🧠 Diseñando matriz FODA y estructura del carrusel...")
+            yield sse("estrategia", "start", "🧠 Diseñando matriz FODA y arte del carrusel...")
             campana = await run_in_threadpool(generate_campaign_bulletproof, business, competitor, angulo)
 
-            # Enviar el dashboard completo con texto al instante
             yield sse("estrategia", "done", "📊 ¡Estrategia completada exitosamente!", campana)
 
-            # Enviar las imágenes progresivamente sin trabar la interfaz
             total = len(campana["carrusel_placas"])
             for i, placa in enumerate(campana["carrusel_placas"]):
                 image_url = build_pollinations_url(placa["image_prompt"])
                 yield sse(
                     "imagen",
                     "done",
-                    f"✨ Renderizando arte HD {i + 1}/{total}...",
+                    f"✨ Generando fotografía publicitaria {i + 1}/{total}...",
                     {
                         "index": i,
                         "total": total,
@@ -272,7 +283,7 @@ async def analyze(
                     }
                 )
 
-            yield sse("completo", "done", "🚀 Proceso finalizado. Tu estrategia está lista.", {"nombre_campana": campana["nombre_campana"]})
+            yield sse("completo", "done", "🚀 Proceso finalizado con éxito.", {"nombre_campana": campana["nombre_campana"]})
 
         except Exception as exc:
             log.exception("Error general")
