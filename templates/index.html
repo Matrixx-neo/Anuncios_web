@@ -3,69 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdGenius - AI Marketing Dashboard</title>
+    <title>AI Studio - Dashboard Publicitario</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .bg-grid { background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px); background-size: 24px 24px; }
-        .skeleton { background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
-        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #090d16; }
+        .bg-glow { background: radial-gradient(circle at 50% 0%, rgba(120, 80, 255, 0.15) 0%, rgba(9, 13, 22, 1) 70%); }
+        .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glass-input { background: rgba(10, 15, 26, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass-input:focus { border-color: #8b5cf6; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
+        .skeleton { background: linear-gradient(90deg, #111827 25%, #1f2937 50%, #111827 75%); background-size: 200% 100%; animation: pulse-glow 1.5s infinite; }
+        @keyframes pulse-glow { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen bg-grid font-sans">
-    <div class="max-w-6xl mx-auto px-4 py-8">
-        <!-- Header -->
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500 mb-2">
-                AdGenius AI
+<body class="text-slate-100 min-h-screen bg-glow antialiased selection:bg-purple-500 selection:text-white">
+
+    <div class="max-w-6xl mx-auto px-4 py-10">
+        <!-- Header Elegante -->
+        <header class="text-center mb-12">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold uppercase tracking-widest mb-4">
+                <span>✨ AI Marketing Platform</span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-3">
+                Estrategia & Carruseles HD
             </h1>
-            <p class="text-gray-400">Inteligencia competitiva y creación de carruseles publicitarios HD</p>
+            <p class="text-slate-400 text-base max-w-xl mx-auto">
+                Genera inteligencia competitiva e imágenes comerciales ultra nítidas adaptadas a la identidad de tu marca.
+            </p>
         </header>
 
-        <!-- Formulario -->
-        <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm mb-10">
-            <form id="analyzeForm" enctype="multipart/form-data" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Formulario Principal -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl mb-10">
+            <form id="analyzeForm" enctype="multipart/form-data" class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Tu Negocio (URL o Nombre)</label>
-                        <input type="text" name="business_url" required placeholder="ej. Jabones Artesanales Natura" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500">
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Tu Negocio (URL o Nombre)</label>
+                        <input type="text" name="business_url" required placeholder="ej. Jabones Artesanales Natura" class="w-full glass-input rounded-2xl px-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Competidor (URL o Nombre)</label>
-                        <input type="text" name="competitor_url" required placeholder="ej. CompetidorDirecto.com" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500">
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Competidor (URL o Nombre)</label>
+                        <input type="text" name="competitor_url" required placeholder="ej. MarcaCompetidora.com" class="w-full glass-input rounded-2xl px-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Enfoque / Ángulo (Opcional)</label>
-                    <input type="text" name="angulo" placeholder="ej. Educativo, Oferta, Comparativa..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Enfoque / Ángulo (Opcional)</label>
+                        <input type="text" name="angulo" placeholder="ej. Educativo, Oferta Especial, Comparativa..." class="w-full glass-input rounded-2xl px-4 py-3.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">📸 Fotos de tu Producto (Opcional)</label>
+                        <input type="file" name="images" multiple accept="image/*" class="w-full glass-input rounded-2xl px-3 py-2 text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-purple-600 file:text-white file:font-semibold hover:file:bg-purple-500 cursor-pointer transition">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">📸 Fotos de tu producto (Opcional, para precisión visual HD)</label>
-                    <input type="file" name="images" multiple accept="image/*" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700">
-                </div>
-                <button type="submit" id="btnSubmit" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+
+                <button type="submit" id="btnSubmit" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 rounded-2xl transition shadow-lg shadow-purple-900/30 flex items-center justify-center gap-3 text-sm tracking-wide">
                     <span>⚡ Generar Análisis y Carrusel HD</span>
                 </button>
             </form>
         </div>
 
-        <!-- Status Stream -->
-        <div id="statusContainer" class="hidden bg-gray-900 border border-purple-500/30 rounded-xl p-4 mb-8">
-            <div class="flex items-center gap-3">
-                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-400"></div>
-                <p id="statusText" class="text-purple-300 text-sm font-medium">Iniciando proceso...</p>
+        <!-- Feedback / Status Loader -->
+        <div id="statusContainer" class="hidden glass-card rounded-2xl p-5 mb-10 border-purple-500/30">
+            <div class="flex items-center gap-4">
+                <div class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                </div>
+                <p id="statusText" class="text-purple-300 text-sm font-medium">Iniciando procesamiento...</p>
             </div>
         </div>
 
         <!-- Dashboard Result -->
-        <div id="dashboard" class="hidden space-y-8">
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-                <h2 id="campaignTitle" class="text-2xl font-bold text-white mb-4">Campaña</h2>
-                <div id="dashboardData" class="text-gray-300 space-y-2 text-sm"></div>
+        <div id="dashboard" class="hidden space-y-10">
+            <!-- Resumen Estratégico -->
+            <div class="glass-card rounded-3xl p-6 sm:p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 id="campaignTitle" class="text-2xl font-extrabold text-white">Estrategia Publicitaria</h2>
+                    <span id="scoreBadge" class="bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold px-3 py-1.5 rounded-full">Score: --/100</span>
+                </div>
+                <div id="dashboardData" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-300"></div>
             </div>
 
-            <!-- Carrusel Cards -->
-            <h3 class="text-xl font-bold text-white">Placas del Carrusel (Desliza)</h3>
-            <div id="carouselContainer" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4"></div>
+            <!-- Carrusel de Placas -->
+            <div>
+                <h3 class="text-xl font-extrabold text-white mb-6">Placas del Carrusel Publicitario</h3>
+                <div id="carouselContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5"></div>
+            </div>
         </div>
     </div>
 
@@ -77,6 +101,7 @@
         const carouselContainer = document.getElementById('carouselContainer');
         const dashboardData = document.getElementById('dashboardData');
         const campaignTitle = document.getElementById('campaignTitle');
+        const scoreBadge = document.getElementById('scoreBadge');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -85,75 +110,88 @@
             statusContainer.classList.remove('hidden');
             dashboard.classList.add('hidden');
             carouselContainer.innerHTML = '';
-            statusText.innerText = 'Iniciando generación...';
+            statusText.innerText = 'Conectando con el motor de IA...';
 
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                body: formData
-            });
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
 
-                for (const line of lines) {
-                    if (line.startswith('data: ')) {
-                        try {
-                            const json = JSON.parse(line.replace('data: ', ''));
-                            statusText.innerText = json.mensaje;
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const json = JSON.parse(line.replace('data: ', ''));
+                                statusText.innerText = json.mensaje;
 
-                            if (json.stage === 'estrategia' && json.status === 'done') {
-                                dashboard.classList.remove('hidden');
-                                campaignTitle.innerText = json.data.nombre_campana;
-                                dashboardData.innerHTML = `
-                                    <p><strong>Score Competencia:</strong> ${json.data.score_competencia}/100</p>
-                                    <p><strong>Recomendaciones:</strong> ${json.data.recomendaciones_clave.join(', ')}</p>
-                                    <p><strong>Hashtags:</strong> ${json.data.hashtags.join(' ')}</p>
-                                `;
-                            }
-
-                            if (json.stage === 'imagen' && json.status === 'start') {
-                                const card = document.createElement('div');
-                                card.id = `card-${json.data.index}`;
-                                card.className = 'bg-gray-900 border border-gray-800 rounded-xl overflow-hidden flex flex-col justify-between h-[400px] relative';
-                                card.innerHTML = `
-                                    <div class="absolute inset-0 skeleton flex items-center justify-center p-4 text-center text-xs text-gray-300">
-                                        ✨ Generando fondo HD...
-                                    </div>
-                                    <div class="relative z-10 p-4 bg-black/60 backdrop-blur-sm h-full flex flex-col justify-between">
-                                        <span class="text-[10px] uppercase tracking-wider text-purple-400 font-bold">${json.data.tipo}</span>
-                                        <div>
-                                            <h4 class="font-bold text-white text-sm mb-1">${json.data.titulo}</h4>
-                                            <p class="text-xs text-gray-300">${json.data.descripcion}</p>
+                                if (json.stage === 'estrategia' && json.status === 'done') {
+                                    dashboard.classList.remove('hidden');
+                                    campaignTitle.innerText = json.data.nombre_campana;
+                                    scoreBadge.innerText = `Score Competencia: ${json.data.score_competencia}/100`;
+                                    
+                                    dashboardData.innerHTML = `
+                                        <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                                            <h4 class="font-bold text-white mb-2">💡 Recomendaciones Clave</h4>
+                                            <ul class="list-disc list-inside space-y-1 text-xs text-slate-400">
+                                                ${json.data.recomendaciones_clave.map(r => `<li>${r}</li>`).join('')}
+                                            </ul>
                                         </div>
-                                    </div>
-                                `;
-                                carouselContainer.appendChild(card);
-                            }
-
-                            if (json.stage === 'imagen' && json.status === 'done') {
-                                const card = document.getElementById(`card-${json.data.index}`);
-                                if (card) {
-                                    card.style.backgroundImage = `url('${json.data.image_url}')`;
-                                    card.style.backgroundSize = 'cover';
-                                    card.style.backgroundPosition = 'center';
-                                    const skeleton = card.querySelector('.skeleton');
-                                    if (skeleton) skeleton.remove();
+                                        <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                                            <h4 class="font-bold text-white mb-2">🏷️ Hashtags Sugeridos</h4>
+                                            <p class="text-xs text-purple-400 font-medium">${json.data.hashtags.join(' ')}</p>
+                                        </div>
+                                    `;
                                 }
-                            }
 
-                            if (json.stage === 'completo') {
-                                statusContainer.classList.add('hidden');
-                            }
-                        } catch (err) {}
+                                if (json.stage === 'imagen' && json.status === 'start') {
+                                    const card = document.createElement('div');
+                                    card.id = `card-${json.data.index}`;
+                                    card.className = 'glass-card rounded-2xl overflow-hidden flex flex-col justify-between h-[380px] relative transition hover:border-purple-500/50';
+                                    card.innerHTML = `
+                                        <div class="absolute inset-0 skeleton flex items-center justify-center p-4 text-center text-xs text-slate-400 font-medium">
+                                            ✨ Renderizando fondo HD...
+                                        </div>
+                                        <div class="relative z-10 p-5 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent h-full flex flex-col justify-between">
+                                            <span class="inline-block self-start px-2.5 py-1 rounded-lg bg-purple-500/30 border border-purple-400/30 text-[10px] font-bold text-purple-300 uppercase tracking-wider">${json.data.tipo}</span>
+                                            <div>
+                                                <h4 class="font-bold text-white text-sm mb-1.5 leading-snug">${json.data.titulo}</h4>
+                                                <p class="text-xs text-slate-300 leading-relaxed line-clamp-4">${json.data.descripcion}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                    carouselContainer.appendChild(card);
+                                }
+
+                                if (json.stage === 'imagen' && json.status === 'done') {
+                                    const card = document.getElementById(`card-${json.data.index}`);
+                                    if (card) {
+                                        card.style.backgroundImage = `url('${json.data.image_url}')`;
+                                        card.style.backgroundSize = 'cover';
+                                        card.style.backgroundPosition = 'center';
+                                        const skeleton = card.querySelector('.skeleton');
+                                        if (skeleton) skeleton.remove();
+                                    }
+                                }
+
+                                if (json.stage === 'completo') {
+                                    statusContainer.classList.add('hidden');
+                                }
+                            } catch (err) {}
+                        }
                     }
                 }
+            } catch (err) {
+                statusText.innerText = '⚠️ Error en la conexión. Reintenta.';
             }
         });
     </script>

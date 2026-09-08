@@ -1,6 +1,6 @@
 """
-AdGenius - Dashboard SaaS de publicidad e inteligencia competitiva con IA
-========================================================================
+SaaS Marketing & Ad Carousel Generator - AI Engine
+=================================================
 """
 
 import asyncio
@@ -24,21 +24,17 @@ from PIL import Image
 import io
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("adgenius")
-
-# -----------------------------------------------------------------------------
-# Configuración
-# -----------------------------------------------------------------------------
+log = logging.getLogger("app")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-SCRAPE_TIMEOUT = 4.0
+SCRAPE_TIMEOUT = 3.5
 POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-app = FastAPI(title="AdGenius API")
+app = FastAPI(title="AI Marketing Studio")
 templates = Jinja2Templates(directory="templates")
 
 HEADERS = {
@@ -49,10 +45,6 @@ HEADERS = {
 }
 
 SOCIAL_DOMAINS = ("instagram.com", "tiktok.com", "facebook.com", "twitter.com", "x.com")
-
-# -----------------------------------------------------------------------------
-# Módulo Scraper
-# -----------------------------------------------------------------------------
 
 def extract_brand_from_url(raw_url: str) -> str:
     try:
@@ -67,7 +59,6 @@ def extract_brand_from_url(raw_url: str) -> str:
         return dominio.replace("-", " ").replace("_", " ").title() or raw_url
     except Exception:
         return raw_url
-
 
 def scrape_url(raw_url: str) -> dict:
     url = raw_url.strip()
@@ -90,27 +81,14 @@ def scrape_url(raw_url: str) -> dict:
 
             title = meta("og:title", "twitter:title") or (soup.title.string.strip() if soup.title and soup.title.string else "")
             description = meta("og:description", "twitter:description", "description")
-            body_text = " ".join(t.get_text(" ", strip=True) for t in soup.find_all(["h1", "h2", "h3", "p", "li"])[:60])
-
-            if not title and not description and not body_text:
-                raise ValueError("Sin contenido útil")
+            body_text = " ".join(t.get_text(" ", strip=True) for t in soup.find_all(["h1", "h2", "h3", "p", "li"])[:50])
 
             marca = title or extract_brand_from_url(url)
-            content = f"Título: {marca}\nDescripción: {description}\nContenido: {body_text}".strip()[:6000]
+            content = f"Título: {marca}\nDescripción: {description}\nContenido: {body_text}".strip()[:4000]
             return {"url": url, "title": marca, "content": content, "scraped": True}
     except Exception as exc:
         marca = extract_brand_from_url(url)
-        log.warning("Scraping degradado para %s (%s)", url, exc)
-        return {
-            "url": url,
-            "title": marca,
-            "content": f"No se pudo acceder a {url}. Usa '{marca}' como marca de referencia.",
-            "scraped": False,
-        }
-
-# -----------------------------------------------------------------------------
-# Generación con IA (Gemini Multimodal)
-# -----------------------------------------------------------------------------
+        return {"url": url, "title": marca, "content": f"Marca de referencia: {marca}", "scraped": False}
 
 _METRICA = {"type": "object", "properties": {"tu_negocio": {"type": "integer"}, "competencia": {"type": "integer"}}, "required": ["tu_negocio", "competencia"]}
 _DIA_PLAN = {"type": "object", "properties": {"idea": {"type": "string"}, "objetivo": {"type": "string"}}, "required": ["idea", "objetivo"]}
@@ -154,14 +132,20 @@ CAMPAIGN_SCHEMA = {
     "required": ["nombre_campana", "score_competencia", "metricas_comparativas", "matriz_swot", "plan_semanal", "recomendaciones_clave", "hashtags", "carrusel_placas"],
 }
 
+def optimize_image(image_bytes: bytes) -> Image.Image:
+    img = Image.open(io.BytesIO(image_bytes))
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    img.thumbnail((1024, 1024))
+    return img
 
 def generate_campaign(business: dict, competitor: dict, angulo: Optional[str] = None, image_pil_list: Optional[List[Image.Image]] = None) -> dict:
     if not GEMINI_API_KEY:
-        raise RuntimeError("Falta GEMINI_API_KEY")
+        raise RuntimeError("Falta GEMINI_API_KEY en variables de entorno")
 
-    linea_angulo = f"Enfoque solicitado: '{angulo}'." if angulo else "Enfoque publicitario equilibrado y persuasivo."
+    linea_angulo = f"Enfoque solicitado: '{angulo}'." if angulo else "Enfoque publicitario equilibrado y de alto impacto."
     
-    prompt = f"""Eres un estratega senior de marketing digital y director creativo publicitario.
+    prompt = f"""Eres un director creativo publicitario de nivel mundial.
 
 NEGOCIO PROPIO ({business['url']}):
 {business['content']}
@@ -171,15 +155,12 @@ COMPETIDOR ({competitor['url']}):
 
 {linea_angulo}
 
-INSTRUCCIONES DE IMAGEN OBLIGATORIAS:
-- Identifica el producto/servicio exacto del negocio propio.
-- Si hay imágenes de muestra adjuntas, analiza su estética, empaque y colores reales.
-- CADA uno de los 5 'image_prompt' DEBE estar escrito EN INGLÉS y DEBE contener EXPLÍCITAMENTE el tipo de producto/rubro exacto (ej. si son 'jabones artesanales', usa 'handcrafted organic soap bar').
-- NUNCA generes ambientes o muebles genéricos desvinculados del producto.
-- Estilo: 'Professional commercial photography, sharp focus, 8k resolution, studio soft lighting, clean background, hyper-realistic, high detail'.
-- NO incluyas texto ni letras dentro de las imágenes.
-
-Genera el JSON completo respetando la estructura schema.
+REGLAS STRICTAS PARA IMÁGENES:
+- Identifica el producto o servicio exacto comercializado.
+- Si hay fotos adjuntas del producto, analiza sus texturas, empaque y colores para mantener coherencia de marca.
+- Cada 'image_prompt' debe estar en INGLÉS y mencionar explícitamente el nombre del producto/rubro exacto. Jamás temas genéricos ajenos.
+- Estilo: 'Professional product photography, sharp focus, 8k resolution, studio soft lighting, hyper-realistic, pristine detail'.
+- Sin texto ni letras en la imagen.
 """
 
     model = genai.GenerativeModel(GEMINI_MODEL)
@@ -192,15 +173,10 @@ Genera el JSON completo respetando la estructura schema.
         generation_config={
             "response_mime_type": "application/json",
             "response_schema": CAMPAIGN_SCHEMA,
-            "temperature": 0.8,
+            "temperature": 0.7,
         },
     )
     return json.loads(response.text)
-
-
-# -----------------------------------------------------------------------------
-# Módulo Visual HD
-# -----------------------------------------------------------------------------
 
 def build_pollinations_url(prompt: str, fallback_text: str = "product") -> str:
     base_prompt = (prompt or fallback_text).strip()
@@ -209,15 +185,9 @@ def build_pollinations_url(prompt: str, fallback_text: str = "product") -> str:
     seed = random.randint(1, 999_999)
     return f"{POLLINATIONS_BASE}/{encoded}?model=flux&width=1080&height=1350&nologo=true&enhance=true&quality=100&seed={seed}"
 
-
-# -----------------------------------------------------------------------------
-# Endpoints
-# -----------------------------------------------------------------------------
-
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
-
 
 @app.post("/api/analyze")
 async def analyze(
@@ -232,28 +202,29 @@ async def analyze(
 
     async def event_stream():
         try:
-            yield sse("scraping", "start", "🔍 Analizando marca y competencia...")
+            yield sse("scraping", "start", "🔍 Analizando marca y mercado...")
             business = await run_in_threadpool(scrape_url, business_url)
             competitor = await run_in_threadpool(scrape_url, competitor_url)
 
-            # Procesar fotos de marca si se subieron
             pil_images = []
             if images:
+                yield sse("scraping", "progress", "📸 Optimizando imágenes cargadas...")
                 for img in images:
-                    if img.content_type.startswith("image/"):
+                    if img.content_type and img.content_type.startswith("image/"):
                         contents = await img.read()
                         if contents:
-                            pil_images.append(Image.open(io.BytesIO(contents)))
+                            optimized_img = await run_in_threadpool(optimize_image, contents)
+                            pil_images.append(optimized_img)
 
-            yield sse("scraping", "done", "🔍 Datos procesados.", {"business_title": business["title"], "competitor_title": competitor["title"]})
+            yield sse("scraping", "done", "🔍 Información procesada con éxito.")
 
-            yield sse("estrategia", "start", "🧠 Generando estrategia e ideas de carrusel HD con IA...")
+            yield sse("estrategia", "start", "🧠 Generando estrategia y conceptos de carrusel HD...")
             campana = await run_in_threadpool(generate_campaign, business, competitor, angulo, pil_images)
 
             yield sse(
                 "estrategia",
                 "done",
-                "🧠 Estrategia generada con éxito.",
+                "🧠 Estrategia completada.",
                 {
                     "nombre_campana": campana["nombre_campana"],
                     "score_competencia": campana["score_competencia"],
@@ -270,7 +241,7 @@ async def analyze(
                 yield sse(
                     "imagen",
                     "start",
-                    f"🎨 Renderizando placa HD {i + 1}/{total}...",
+                    f"🎨 Diseñando placa visual {i + 1}/{total}...",
                     {
                         "index": i,
                         "total": total,
@@ -279,7 +250,7 @@ async def analyze(
                         "descripcion": placa["descripcion"],
                     },
                 )
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(0.1)
                 image_url = build_pollinations_url(placa["image_prompt"], placa["titulo"])
                 yield sse(
                     "imagen",
@@ -288,19 +259,17 @@ async def analyze(
                     {"index": i, "image_url": image_url},
                 )
 
-            yield sse("completo", "done", "✨ Carrusel completo y listo.", {"nombre_campana": campana["nombre_campana"]})
+            yield sse("completo", "done", "✨ Proceso finalizado con éxito.", {"nombre_campana": campana["nombre_campana"]})
 
         except Exception as exc:
             log.exception("Error en pipeline")
-            yield sse("error", "error", "⚠️ Ocurrió un error en la generación.", {"mensaje": str(exc)})
+            yield sse("error", "error", f"⚠️ Error: {str(exc)}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
-
 
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "gemini_configurado": bool(GEMINI_API_KEY)}
-
 
 if __name__ == "__main__":
     import uvicorn
