@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdGenius — Panel Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #09090f; }
+  .glass { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(16px); }
+</style>
+</head>
+<body class="min-h-screen text-slate-100 font-sans antialiased">
+<div class="max-w-4xl mx-auto px-6 py-10">
+  <div class="flex items-center justify-between mb-8">
+    <h1 class="text-2xl font-bold">🛠️ Panel Administrador — Recargas pendientes</h1>
+    <a href="/" class="text-sm text-indigo-400 hover:underline">← Volver a la app</a>
+  </div>
+
+  {% if pendientes|length == 0 %}
+  <div class="glass rounded-2xl p-8 text-center text-slate-400">No hay recargas pendientes por revisar. ✅</div>
+  {% endif %}
+
+  <div class="space-y-4">
+    {% for r in pendientes %}
+    <div class="glass rounded-2xl p-5 flex flex-col sm:flex-row gap-5">
+      <a href="/admin/comprobante/{{ r.id }}" target="_blank" class="shrink-0">
+        <img src="/admin/comprobante/{{ r.id }}" alt="Comprobante" class="w-32 h-32 object-cover rounded-xl border border-white/10">
+      </a>
+      <div class="flex-1">
+        <p class="font-semibold">{{ r.name or r.email }}</p>
+        <p class="text-xs text-slate-400 mb-2">{{ r.email }}</p>
+        <p class="text-sm">Monto: <span class="text-indigo-400 font-medium">{{ r.monto }}</span> · Método: <span class="font-medium">{{ r.metodo }}</span> · Créditos a acreditar: <span class="font-medium">{{ r.creditos }}</span></p>
+        <div class="flex gap-3 mt-4">
+          <form method="post" action="/admin/recargas/{{ r.id }}/resolver">
+            <input type="hidden" name="accion" value="aprobar">
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 transition text-white text-sm font-semibold rounded-lg px-4 py-2">✓ Aprobar y acreditar</button>
+          </form>
+          <form method="post" action="/admin/recargas/{{ r.id }}/resolver">
+            <input type="hidden" name="accion" value="rechazar">
+            <button type="submit" class="bg-red-600/80 hover:bg-red-500 transition text-white text-sm font-semibold rounded-lg px-4 py-2">✕ Rechazar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+</body>
+</html>
