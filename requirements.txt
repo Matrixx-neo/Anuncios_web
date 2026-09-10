@@ -7,3 +7,5 @@ itsdangerous
 httpx
 beautifulsoup4
 requests
+jinja2
+python-multipart
