@@ -1,8 +1,9 @@
 fastapi
-uvicorn
+uvicorn[standard]
+google-generativeai
+PyJWT
+authlib
+itsdangerous
 httpx
 beautifulsoup4
-google-generativeai
-jinja2
-python-multipart
-Pillow
+requests
