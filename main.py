@@ -88,7 +88,7 @@ async def index(request: Request):
         # Refrescar datos desde DB
         user = database.get_user(user['email'])
         request.session['user'] = user
-    return templates.TemplateResponse("index.html", {"request": request, "user": user})
+    return templates.TemplateResponse(request=request, name="index.html", context={"request": request, "user": user})
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
@@ -96,7 +96,7 @@ async def admin_panel(request: Request):
     if not user or user.get('role') != 'admin':
         return RedirectResponse(url="/")
     txs = database.get_pending_transactions()
-    return templates.TemplateResponse("admin.html", {"request": request, "txs": txs, "user": user})
+    return templates.TemplateResponse(request=request, name="admin.html", context={"request": request, "txs": txs, "user": user})
 
 # ===== API DE PAGOS =====
 @app.post("/api/recharge")
@@ -130,8 +130,8 @@ async def stream_generator(user_data, input_text: str, competitor: str):
     yield send_evt("progress", {"message": "Analizando negocio..."})
     await asyncio.sleep(0.5)
 
-    is_admin = user_data and user_data['role'] == 'admin'
-    has_credits = user_data and user_data['credits'] > 0
+    is_admin = user_data and user_data.get('role') == 'admin'
+    has_credits = user_data and user_data.get('credits', 0) > 0
 
     # 1. PARTE GRATUITA (FODA y Resumen)
     foda_data = {
