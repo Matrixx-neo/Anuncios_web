@@ -1,72 +1,80 @@
 import sqlite3
-import os
-from contextlib import contextmanager
+from datetime import datetime
 
-DB_PATH = os.getenv("DB_PATH", "advance.db")
+DB_NAME = "advance.db"
+
+def get_connection():
+    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS users
-                     (email TEXT PRIMARY KEY, name TEXT, role TEXT, credits INTEGER)''')
-        c.execute('''CREATE TABLE IF NOT EXISTS transactions
-                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                      user_email TEXT, amount REAL, method TEXT, 
-                      receipt_path TEXT, status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-        conn.commit()
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Tabla de Usuarios
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            email TEXT PRIMARY KEY,
+            credits INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    # Tabla de Transacciones (Pagos)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            amount REAL,
+            operation_code TEXT,
+            voucher_b64 TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
 
-@contextmanager
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-    finally:
-        conn.close()
+def get_user(email):
+    conn = get_connection()
+    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+    return user
 
-def create_or_update_user(email: str, name: str, default_role: str):
-    with get_db() as db:
-        user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        if not user:
-            db.execute("INSERT INTO users (email, name, role, credits) VALUES (?, ?, ?, ?)", 
-                       (email, name, default_role, 1)) # 1 crédito de bienvenida
-            db.commit()
-            return {"email": email, "name": name, "role": default_role, "credits": 1}
-        else:
-            # Actualizar rol por si cambió ADMIN_EMAILS
-            db.execute("UPDATE users SET role = ? WHERE email = ?", (default_role, email))
-            db.commit()
-            return dict(db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone())
+def create_user(email, credits=1):
+    conn = get_connection()
+    conn.execute("INSERT OR IGNORE INTO users (email, credits) VALUES (?, ?)", (email, credits))
+    conn.commit()
+    conn.close()
+    return get_user(email)
 
-def get_user(email: str):
-    with get_db() as db:
-        user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        return dict(user) if user else None
+def update_credits(email, new_credits):
+    conn = get_connection()
+    conn.execute("UPDATE users SET credits = ? WHERE email = ?", (new_credits, email))
+    conn.commit()
+    conn.close()
 
-def deduct_credit(email: str):
-    with get_db() as db:
-        db.execute("UPDATE users SET credits = credits - 1 WHERE email = ? AND credits > 0", (email,))
-        db.commit()
-
-def add_transaction(email: str, amount: float, method: str, receipt_path: str):
-    with get_db() as db:
-        db.execute("INSERT INTO transactions (user_email, amount, method, receipt_path, status) VALUES (?, ?, ?, ?, ?)",
-                   (email, amount, method, receipt_path, "PENDIENTE"))
-        db.commit()
+def create_transaction(email, amount, operation_code, voucher_b64):
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO transactions (email, amount, operation_code, voucher_b64) VALUES (?, ?, ?, ?)",
+        (email, amount, operation_code, voucher_b64)
+    )
+    conn.commit()
+    conn.close()
 
 def get_pending_transactions():
-    with get_db() as db:
-        return [dict(row) for row in db.execute("SELECT * FROM transactions WHERE status = 'PENDIENTE' ORDER BY created_at DESC")]
+    conn = get_connection()
+    txs = conn.execute("SELECT * FROM transactions WHERE status = 'pending' ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return txs
 
-def approve_transaction(tx_id: int):
-    with get_db() as db:
-        tx = db.execute("SELECT * FROM transactions WHERE id = ?", (tx_id,)).fetchone()
-        if tx and tx['status'] == 'PENDIENTE':
-            # 10 Soles = 1 Crédito, 35 Soles = 10 créditos (lógica base)
-            amount = float(tx['amount'])
-            credits_to_add = 10 if amount >= 30 else 3
-            db.execute("UPDATE users SET credits = credits + ? WHERE email = ?", (credits_to_add, tx['user_email']))
-            db.execute("UPDATE transactions SET status = 'APROBADA' WHERE id = ?", (tx_id,))
-            db.commit()
-            return True
-        return False
+def update_transaction_status(tx_id, status):
+    conn = get_connection()
+    conn.execute("UPDATE transactions SET status = ? WHERE id = ?", (status, tx_id))
+    if status == 'approved':
+        tx = conn.execute("SELECT email, amount FROM transactions WHERE id = ?", (tx_id,)).fetchone()
+        if tx:
+            # Añadir 5 créditos por cada transacción aprobada (ajustable)
+            conn.execute("UPDATE users SET credits = credits + 5 WHERE email = ?", (tx['email'],))
+    conn.commit()
+    conn.close()

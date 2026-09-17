@@ -1,204 +1,235 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdVance AI - Dashboard de Publicidad</title>
+    <title>AdVance AI - Generador de Anuncios</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { background-color: #08090d; color: #f1f5f9; }
-        .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.07); }
-        .paywall-blur { filter: blur(8px); pointer-events: none; user-select: none; }
-        .paywall-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; items-center; z-index: 10; background: rgba(8, 9, 13, 0.5); }
+        body { background-color: #08090d; color: #e2e8f0; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .gradient-text { background: linear-gradient(90deg, #818cf8, #c084fc, #2dd4bf); -webkit-background-clip: text; color: transparent; }
+        .blur-paywall { filter: blur(8px); pointer-events: none; user-select: none; }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #08090d; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen font-sans antialiased flex flex-col">
 
-    <nav class="border-b border-slate-800 bg-slate-950/70 backdrop-blur px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <!-- Navbar -->
+    <nav class="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-gradient-to-tr from-indigo-600 to-pink-500 rounded-xl flex items-center justify-center font-black text-white">A</div>
-            <span class="text-xl font-bold text-white">AdVance <span class="text-indigo-400">AI</span></span>
+            <div class="w-8 h-8 rounded bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-white">A</div>
+            <span class="text-xl font-bold tracking-wider">AdVance <span class="gradient-text">AI</span></span>
         </div>
         <div>
             {% if user %}
                 <div class="flex items-center gap-4">
-                    {% if user.role == 'admin' %}
-                        <span class="text-xs bg-indigo-900 text-indigo-300 px-3 py-1 rounded-full border border-indigo-700">Modo Dios (Ilimitado)</span>
-                        <a href="/admin" class="text-xs text-slate-300 hover:text-white"><i class="fa-solid fa-gauge"></i> Admin</a>
-                    {% else %}
-                        <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-700">Créditos: <strong class="text-white">{{ user.credits }}</strong></span>
-                    {% endif %}
-                    <a href="/auth/logout" class="text-xs text-red-400 hover:text-red-300"><i class="fa-solid fa-right-from-bracket"></i> Salir</a>
+                    <span class="text-sm text-gray-400">
+                        <i class="fa-solid fa-coins text-yellow-400 mr-1"></i> 
+                        <span id="credit-count">{{ user.credits if not is_admin else '∞' }}</span>
+                    </span>
+                    <span class="text-sm font-medium">{{ user.email }}</span>
+                    {% if is_admin % <a href="/admin" class="text-xs bg-indigo-600/30 text-indigo-300 px-2 py-1 rounded">Admin</a> {% endif %}
+                    <a href="/logout" class="text-sm hover:text-red-400 transition"><i class="fa-solid fa-sign-out-alt"></i></a>
                 </div>
             {% else %}
-                <a href="/auth/login" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 px-4 py-2 rounded-xl font-medium flex items-center gap-2">
-                    <i class="fa-brands fa-google text-indigo-400"></i> Iniciar sesión
-                </a>
+                <a href="/login" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition shadow-[0_0_15px_rgba(79,70,229,0.3)]">Iniciar Sesión</a>
             {% endif %}
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 py-8 w-full grid md:grid-cols-12 gap-8">
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-6 w-full max-w-4xl mx-auto mt-10">
         
-        <div class="md:col-span-5 space-y-6">
-            <form id="adsForm" class="glass-card p-6 rounded-2xl space-y-5">
-                <h2 class="text-lg font-bold text-white mb-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> Nuevo Análisis</h2>
-                
-                <div>
-                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Tu negocio o producto</label>
-                    <textarea name="business_input" id="business_input" rows="4" required placeholder="URL o descripción en texto libre..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:border-indigo-500 outline-none"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Fotos del producto (Opcional)</label>
-                    <input type="file" name="product_photos" multiple accept="image/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-slate-800 file:text-indigo-400">
-                </div>
-
-                <button type="submit" class="w-full py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-500 transition">Generar Estrategia</button>
-            </form>
+        <div class="text-center mb-10 w-full">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Potencia tus ventas con <span class="gradient-text">IA</span></h1>
+            <p class="text-gray-400">Ingresa la URL de tu negocio o describe lo que vendes. Nosotros hacemos el resto.</p>
         </div>
 
-        <div class="md:col-span-7 space-y-6">
-            <!-- Sección Gratuita -->
-            <div class="glass-card p-6 rounded-2xl hidden" id="fodaSection">
-                <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider"><i class="fa-solid fa-chart-pie text-emerald-400"></i> Análisis FODA (Gratis)</h3>
-                <div id="fodaContent" class="grid grid-cols-2 gap-4 text-xs text-slate-300"></div>
+        <!-- Formulario -->
+        <form id="gen-form" class="glass-panel p-6 rounded-2xl w-full shadow-2xl relative">
+            {% if not user %}
+            <div class="absolute inset-0 bg-[#08090d]/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl">
+                <i class="fa-solid fa-lock text-4xl text-gray-500 mb-3"></i>
+                <p class="mb-4">Inicia sesión para utilizar la herramienta</p>
+                <a href="/login" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Continuar con Google</a>
+            </div>
+            {% endif %}
+            
+            <div class="mb-5">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Descripción o URL del producto/servicio</label>
+                <textarea name="input_text" rows="3" required placeholder="Ej: https://instagram.com/mi-tienda o 'Vendo zapatillas deportivas en Lima...'" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none transition"></textarea>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Imágenes referenciales (Opcional)</label>
+                <input type="file" name="files" multiple accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 transition cursor-pointer">
             </div>
 
-            <!-- Sección Premium protegida por Paywall -->
-            <div class="relative hidden" id="premiumSection">
-                <div id="premiumContent" class="glass-card p-6 rounded-2xl space-y-6">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider"><i class="fa-solid fa-crown text-amber-400"></i> Estrategia Premium</h3>
-                    <div id="copyContent" class="bg-slate-900 p-4 rounded-xl text-sm text-slate-300 whitespace-pre-line"></div>
-                    <div id="metricsContent" class="grid grid-cols-3 gap-2 text-center text-xs font-bold text-white"></div>
-                    <div id="carouselContent" class="grid grid-cols-3 gap-3"></div>
-                </div>
+            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl transition shadow-[0_0_20px_rgba(99,102,241,0.4)] flex justify-center items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia
+            </button>
+        </form>
 
-                <!-- Capa de Bloqueo -->
-                <div id="paywallOverlay" class="hidden paywall-overlay rounded-2xl items-center text-center p-6 backdrop-blur-sm">
-                    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl max-w-sm w-full shadow-2xl">
-                        <i class="fa-solid fa-lock text-4xl text-amber-400 mb-3"></i>
-                        <h4 class="text-lg font-bold text-white mb-2">Análisis Bloqueado</h4>
-                        <p class="text-xs text-slate-400 mb-4">Para ver tu estrategia completa y carrusel HD necesitas créditos.</p>
-                        <button onclick="document.getElementById('rechargeModal').classList.remove('hidden')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-2 rounded-xl text-sm transition">Recargar Saldo</button>
+        <!-- Resultados -->
+        <div id="results-container" class="w-full mt-8 space-y-6 hidden">
+            <!-- FODA -->
+            <div class="glass-panel p-6 rounded-2xl">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-cyan-400"><i class="fa-solid fa-chart-pie"></i> Análisis FODA (Gratis)</h3>
+                <div id="foda-content" class="prose prose-invert max-w-none text-gray-300"></div>
+            </div>
+
+            <!-- Premium Area -->
+            <div id="premium-wrapper" class="relative glass-panel rounded-2xl overflow-hidden">
+                
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-purple-400"><i class="fa-solid fa-crown"></i> Copys & Métricas (Premium)</h3>
+                    <div id="premium-content" class="prose prose-invert max-w-none text-gray-300">
+                        <p class="text-gray-500 italic">Generando contenido de alta conversión...</p>
                     </div>
                 </div>
+
+                <!-- Paywall Overlay -->
+                <div id="paywall-overlay" class="absolute inset-0 bg-[#08090d]/60 backdrop-blur-md z-20 flex flex-col items-center justify-center hidden">
+                    <div class="bg-[#11131e] p-8 rounded-2xl border border-white/10 text-center max-w-sm shadow-2xl">
+                        <i class="fa-solid fa-lock text-5xl text-indigo-500 mb-4"></i>
+                        <h4 class="text-2xl font-bold mb-2">Contenido Bloqueado</h4>
+                        <p class="text-gray-400 text-sm mb-6">Te has quedado sin créditos. Recarga para ver los copys AIDA y métricas financieras.</p>
+                        <button onclick="openModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition">
+                            Recargar Créditos
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
 
-    <!-- Modal Recarga -->
-    <div id="rechargeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="glass-card p-6 rounded-2xl max-w-md w-full relative">
-            <button onclick="document.getElementById('rechargeModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            <h3 class="text-lg font-bold text-white mb-4">Recargar Créditos (Perú)</h3>
-            <p class="text-xs text-slate-400 mb-4">1 Crédito = 1 Análisis. Transfiere y sube tu voucher.</p>
-            
-            <div class="flex gap-2 mb-4">
-                <div class="flex-1 bg-slate-900 p-3 rounded-xl border border-purple-500 text-center">
-                    <p class="text-[10px] font-bold text-purple-400 uppercase">Yape / Plin</p>
-                    <p class="text-sm font-black text-white">999 888 777</p>
-                    <p class="text-[10px] text-slate-500">AdVance AI SAC</p>
+    <!-- Modal Pago Local (Perú) -->
+    <div id="payment-modal" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-[#11131e] border border-white/10 rounded-2xl p-6 w-full max-w-md relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+            <h3 class="text-2xl font-bold mb-1 text-center">Recargar Saldo</h3>
+            <p class="text-center text-sm text-gray-400 mb-6">Paquete Emprendedor: S/ 15.00 (5 Créditos)</p>
+
+            <div class="flex justify-center gap-4 mb-6">
+                <div class="text-center">
+                    <div class="bg-[#00BFA5] text-white font-bold py-2 px-4 rounded-xl mb-1">YAPE / PLIN</div>
+                    <span class="text-sm">999 999 999</span>
                 </div>
             </div>
 
-            <form id="rechargeForm" class="space-y-4">
-                <select name="method" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-200 outline-none">
-                    <option value="YAPE">Yape</option>
-                    <option value="PLIN">Plin</option>
-                    <option value="BCP">BCP</option>
-                </select>
-                <input type="number" name="amount" placeholder="Monto depositado (S/)" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-200 outline-none">
-                <input type="file" name="receipt" required accept="image/*" class="w-full text-xs text-slate-400">
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-sm transition">Enviar Comprobante</button>
+            <form id="payment-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Número de Operación</label>
+                    <input type="text" name="operation_code" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="text-center text-xs text-gray-500">O</div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Captura de Pantalla</label>
+                    <input type="file" name="voucher_file" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:bg-white/10 file:text-white cursor-pointer">
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl mt-4 transition">Enviar Validación</button>
             </form>
         </div>
     </div>
 
     <script>
-        {% if not user %}
-        document.getElementById('adsForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            alert("Debes iniciar sesión con Google para generar análisis.");
-            window.location.href = "/auth/login";
-        });
-        {% else %}
-        document.getElementById('adsForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
+        const form = document.getElementById('gen-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const resultsContainer = document.getElementById('results-container');
+        const fodaContent = document.getElementById('foda-content');
+        const premiumContent = document.getElementById('premium-content');
+        const paywallOverlay = document.getElementById('paywall-overlay');
+        
+        let fodaText = '';
+        let premiumText = '';
 
-            document.getElementById('fodaSection').classList.remove('hidden');
-            document.getElementById('premiumSection').classList.remove('hidden');
-            document.getElementById('fodaContent').innerHTML = '<p>Analizando...</p>';
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
             
-            // Restablecer estilos de premium
-            document.getElementById('premiumContent').classList.remove('paywall-blur');
-            document.getElementById('paywallOverlay').classList.add('hidden');
-            document.getElementById('carouselContent').innerHTML = '';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Procesando...';
+            resultsContainer.classList.remove('hidden');
+            fodaContent.innerHTML = '';
+            premiumContent.innerHTML = '';
+            paywallOverlay.classList.add('hidden');
+            premiumContent.parentElement.classList.remove('blur-paywall');
+            fodaText = ''; premiumText = '';
 
             try {
-                const response = await fetch('/api/generate', { method: 'POST', body: formData });
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
+                let buffer = '';
 
                 while (true) {
-                    const { value, done } = await reader.read();
+                    const { done, value } = await reader.read();
                     if (done) break;
-                    const chunk = decoder.decode(value, { stream: true });
-                    const events = chunk.split('\n\n');
                     
-                    for (const ev of events) {
-                        if (!ev.trim()) continue;
-                        const eventMatch = ev.match(/event: (.*?)\n/);
-                        const dataMatch = ev.match(/data: (.*)/);
-                        
-                        if (eventMatch && dataMatch) {
-                            const eventName = eventMatch[1];
-                            const data = JSON.parse(dataMatch[1]);
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop(); // Guardar el fragmento incompleto
 
-                            if (eventName === 'foda') {
-                                document.getElementById('fodaContent').innerHTML = `
-                                    <div class="bg-slate-900 p-2 rounded"><b>F:</b> ${data.fortaleza}</div>
-                                    <div class="bg-slate-900 p-2 rounded"><b>O:</b> ${data.oportunidad}</div>
-                                    <div class="bg-slate-900 p-2 rounded"><b>D:</b> ${data.debilidad}</div>
-                                    <div class="bg-slate-900 p-2 rounded"><b>A:</b> ${data.amenaza}</div>
-                                `;
-                            } else if (eventName === 'paywall') {
-                                document.getElementById('premiumContent').classList.add('paywall-blur');
-                                document.getElementById('paywallOverlay').classList.remove('hidden');
-                            } else if (eventName === 'premium_content') {
-                                document.getElementById('copyContent').innerText = data.aida_copy;
-                                document.getElementById('metricsContent').innerHTML = `
-                                    <div class="bg-slate-800 p-2 rounded">CTR<br><span class="text-indigo-400">${data.metrics.ctr}</span></div>
-                                    <div class="bg-slate-800 p-2 rounded">CPC<br><span class="text-emerald-400">${data.metrics.cpc}</span></div>
-                                    <div class="bg-slate-800 p-2 rounded">ROI<br><span class="text-amber-400">${data.metrics.roi}</span></div>
-                                `;
-                                data.images.forEach(img => {
-                                    document.getElementById('carouselContent').innerHTML += `<img src="${img}" class="rounded-lg w-full aspect-square object-cover">`;
-                                });
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = JSON.parse(line.substring(6));
+                            
+                            if (data.type === 'foda') {
+                                fodaText += data.text;
+                                fodaContent.innerHTML = marked.parse(fodaText);
+                            } 
+                            else if (data.type === 'premium') {
+                                premiumText += data.text;
+                                premiumContent.innerHTML = marked.parse(premiumText);
+                            }
+                            else if (data.type === 'paywall_active') {
+                                // Servidor bloqueó la generación
+                                premiumContent.parentElement.classList.add('blur-paywall');
+                                paywallOverlay.classList.remove('hidden');
+                            }
+                            else if (data.type === 'credit_update') {
+                                document.getElementById('credit-count').innerText = data.credits;
                             }
                         }
                     }
                 }
-            } catch (err) {
-                console.error(err);
+            } catch (error) {
+                console.error("Error SSE:", error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia';
             }
         });
 
-        document.getElementById('rechargeForm').addEventListener('submit', async (e) => {
+        // Modal Logic
+        const modal = document.getElementById('payment-modal');
+        function openModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+        function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+
+        document.getElementById('payment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const fd = new FormData(e.target);
-            const res = await fetch('/api/recharge', { method: 'POST', body: fd });
-            const data = await res.json();
-            if(data.success) {
-                alert("Comprobante enviado. El administrador aprobará tu recarga en breve.");
-                document.getElementById('rechargeModal').classList.add('hidden');
-                e.target.reset();
-            }
+            const btn = e.target.querySelector('button');
+            btn.innerHTML = 'Enviando...';
+            
+            const formData = new FormData(e.target);
+            await fetch('/api/checkout', { method: 'POST', body: formData });
+            
+            alert('Enviado. Un administrador validará tu pago pronto.');
+            closeModal();
+            e.target.reset();
+            btn.innerHTML = 'Enviar Validación';
         });
-        {% endif %}
     </script>
 </body>
 </html>

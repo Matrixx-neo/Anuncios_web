@@ -1,51 +1,71 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración - AdVance AI</title>
+    <title>Admin - AdVance AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body { background-color: #08090d; color: #e2e8f0; }
+        .glass-panel { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 p-8">
-    <div class="max-w-4xl mx-auto space-y-6">
-        <div class="flex justify-between items-center bg-slate-900 p-6 rounded-2xl border border-slate-800">
-            <h1 class="text-2xl font-bold text-white">Panel Administrador</h1>
-            <a href="/" class="text-indigo-400 hover:text-indigo-300">Volver a la App</a>
+<body class="p-6">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-white"><i class="fa-solid fa-shield-halved text-indigo-500"></i> Panel de Administración</h1>
+            <a href="/" class="text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded transition">Volver al Home</a>
         </div>
 
-        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-            <h2 class="text-lg font-bold text-white mb-4">Recargas Pendientes</h2>
-            {% if txs|length == 0 %}
-                <p class="text-slate-500 text-sm">No hay recargas pendientes.</p>
-            {% else %}
-                <div class="space-y-4">
-                    {% for tx in txs %}
-                    <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700" id="tx-{{ tx.id }}">
-                        <div>
-                            <p class="font-bold text-white">{{ tx.user_email }}</p>
-                            <p class="text-sm text-slate-400">{{ tx.method }} - S/ {{ tx.amount }}</p>
-                            <p class="text-xs text-slate-500">{{ tx.created_at }}</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <a href="{{ tx.receipt_path }}" target="_blank" class="text-sm text-indigo-400 hover:underline">Ver Voucher</a>
-                            <button onclick="approve({{ tx.id }})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold">Aprobar</button>
-                        </div>
-                    </div>
+        <div class="glass-panel rounded-xl overflow-hidden shadow-2xl">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-white/5 border-b border-white/10 text-gray-300">
+                    <tr>
+                        <th class="p-4">Usuario</th>
+                        <th class="p-4">Fecha</th>
+                        <th class="p-4">Operación</th>
+                        <th class="p-4">Voucher</th>
+                        <th class="p-4 text-right">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for tx in transactions %}
+                    <tr id="tx-{{ tx.id }}" class="hover:bg-white/5 transition">
+                        <td class="p-4 font-medium">{{ tx.email }}</td>
+                        <td class="p-4 text-gray-400">{{ tx.created_at }}</td>
+                        <td class="p-4"><span class="bg-black/50 px-2 py-1 rounded text-xs font-mono">{{ tx.operation_code or 'N/A' }}</span></td>
+                        <td class="p-4">
+                            {% if tx.voucher_b64 %}
+                                <a href="data:image/jpeg;base64,{{ tx.voucher_b64 }}" target="_blank" class="text-indigo-400 hover:underline"><i class="fa-solid fa-image"></i> Ver</a>
+                            {% else %}
+                                <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-right gap-2 flex justify-end">
+                            <button onclick="resolveTx({{ tx.id }}, 'approved')" class="bg-green-600/80 hover:bg-green-500 text-white px-3 py-1 rounded text-xs transition"><i class="fa-solid fa-check"></i> Aprobar</button>
+                            <button onclick="resolveTx({{ tx.id }}, 'rejected')" class="bg-red-600/80 hover:bg-red-500 text-white px-3 py-1 rounded text-xs transition"><i class="fa-solid fa-times"></i> Rechazar</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="p-8 text-center text-gray-500">No hay transacciones pendientes.</td>
+                    </tr>
                     {% endfor %}
-                </div>
-            {% endif %}
+                </tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        async function approve(id) {
-            if(!confirm("¿Aprobar esta recarga y sumar créditos al usuario?")) return;
-            const res = await fetch(`/api/approve_tx/${id}`, { method: 'POST' });
-            const data = await res.json();
-            if(data.success) {
-                document.getElementById(`tx-${id}`).remove();
-                alert("Créditos aprobados correctamente.");
-            }
+        async function resolveTx(txId, action) {
+            if(!confirm('¿Seguro de ' + (action==='approved'?'aprobar':'rechazar') + ' esta transacción?')) return;
+            try {
+                const res = await fetch(`/admin/tx/${txId}/${action}`, { method: 'POST' });
+                if(res.ok) {
+                    document.getElementById('tx-' + txId).remove();
+                }
+            } catch(e) { alert("Error"); }
         }
     </script>
 </body>
