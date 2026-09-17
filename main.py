@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import urllib.parse
 from typing import List, Optional
 from io import BytesIO
 from PIL import Image
@@ -19,7 +20,6 @@ import database
 
 load_dotenv()
 
-# FIX CRÍTICO OAUTH: Forzar HTTPS estrictamente reemplazando el esquema si Render inyecta HTTP
 BASE_URL = os.getenv("BASE_URL", "https://anuncios-web-c4bv.onrender.com").replace("http://", "https://").rstrip("/")
 ADMIN_EMAILS = [e.strip() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 SESSION_SECRET = os.getenv("SESSION_SECRET", "super-secret-session-key")
@@ -30,7 +30,6 @@ model = genai.GenerativeModel('gemini-1.5-flash')
 
 app = FastAPI()
 
-# Middlewares críticos para OAuth detrás de un Reverse Proxy en Render
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, https_only=True, same_site="lax")
 
@@ -69,7 +68,7 @@ async def read_root(request: Request):
 
 @app.get('/auth/login')
 async def login(request: Request):
-    # Forzar redirección con la URL segura validada
+    # FIX CRÍTICO: Redirección OAuth exacta requerida
     redirect_uri = "https://anuncios-web-c4bv.onrender.com/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -104,6 +103,7 @@ async def logout_redirect():
 async def generate_content(
     request: Request,
     input_text: str = Form(...),
+    competitor_text: str = Form(...),
     files: List[UploadFile] = File(None)
 ):
     user = get_current_user(request)
@@ -123,37 +123,53 @@ async def generate_content(
                 pil_images.append(img)
 
     async def sse_generator():
-        # FASE 1: Análisis FODA (Gratis)
-        prompt_foda = f"Realiza un análisis FODA rápido e incisivo para este negocio basado en: {input_text}. Formato Markdown limpio."
+        # FASE 1: Análisis FODA Comparativo (Inmediato - Gratis)
+        prompt_foda = f"Analiza este negocio: '{input_text}' comparado frente a su competidor: '{competitor_text}'. Genera un diagnóstico estratégico rápido y un análisis FODA enfocado. Formato Markdown limpio y directo."
         contents_foda = pil_images + [prompt_foda] if pil_images else [prompt_foda]
         
         response_foda = model.generate_content(contents_foda, stream=True)
         for chunk in response_foda:
             yield f"data: {json.dumps({'type': 'foda', 'text': chunk.text})}\n\n"
-            await asyncio.sleep(0.02)
+            await asyncio.sleep(0.01)
 
         # CONTROL DE PAYWALL SERVIDOR
         if not is_admin and credits <= 0:
             yield f"data: {json.dumps({'type': 'paywall_active'})}\n\n"
             return 
 
-        # Descontar crédito
+        # Descontar crédito a usuarios normales
         if not is_admin:
             database.update_credits(email, credits - 1)
             yield f"data: {json.dumps({'type': 'credit_update', 'credits': credits - 1})}\n\n"
 
-        # FASE 2: Contenido Premium
-        prompt_premium = f"Genera: 1) 3 Copys publicitarios con método AIDA. 2) Estimación de métricas referenciales (CTR, CPC, ROI). Basado en: {input_text}. Formato Markdown."
+        # FASE 2: Contenido Premium (Copys)
+        prompt_premium = f"Actúa como experto en marketing de alto rendimiento. Para el negocio '{input_text}', genera 3 Copys publicitarios con método AIDA diseñados para arrebatarle clientes a '{competitor_text}'. Incluye estimación de métricas referenciales (CTR, CPC). Formato Markdown atractivo."
         contents_premium = pil_images + [prompt_premium] if pil_images else [prompt_premium]
         
         response_premium = model.generate_content(contents_premium, stream=True)
         for chunk in response_premium:
-            yield f"data: {json.dumps({'type': 'premium', 'text': chunk.text})}\n\n"
-            await asyncio.sleep(0.02)
+            yield f"data: {json.dumps({'type': 'premium_text', 'text': chunk.text})}\n\n"
+            await asyncio.sleep(0.01)
             
+        # FASE 3: Generación de Placas HD en paralelo (Pollinations)
+        # Se generan prompts optimizados para IA de imagen basados en el texto original
+        base_prompt = urllib.parse.quote(f"Professional hyperrealistic advertising photography for {input_text[:100]}, clean background, 8k resolution, cinematic lighting")
+        creative_prompt = urllib.parse.quote(f"Modern neon aesthetic banner background for {input_text[:100]}, dark mode UI, glowing accents, 4k")
+        
+        images = [
+            f"https://pollinations.ai/p/{base_prompt}?width=1024&height=576&nologo=true",
+            f"https://pollinations.ai/p/{creative_prompt}?width=1024&height=576&nologo=true"
+        ]
+        
+        yield f"data: {json.dumps({'type': 'images', 'urls': images})}\n\n"
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
-    return StreamingResponse(sse_generator(), media_type="text/event-stream")
+    # Anti-Buffering Headers obligatorios en Render para streaming real-time
+    return StreamingResponse(sse_generator(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no"
+    })
 
 @app.post("/api/checkout")
 async def process_checkout(

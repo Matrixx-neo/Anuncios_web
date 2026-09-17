@@ -61,16 +61,25 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #030305; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        
+        .image-loader {
+            background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 </head>
 <body class="min-h-screen antialiased flex flex-col w-full overflow-x-hidden selection:bg-cyan-500/30">
 
-    <!-- Navbar Futurista -->
+    <!-- Navbar -->
     <nav class="sticky top-0 z-50 px-4 sm:px-8 py-4 flex flex-wrap justify-between items-center w-full glass-card border-b-0 border-t-0 border-l-0 border-r-0 border-b border-white/5">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4facfe] to-[#00f2fe] flex items-center justify-center text-white logo-glow">
@@ -104,25 +113,19 @@
 
     <!-- Main Content -->
     <main class="flex-grow flex flex-col items-center justify-start p-4 sm:p-6 w-full max-w-4xl mx-auto mt-8 sm:mt-12 mb-20 relative">
-        
-        <!-- Background Elements -->
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-64 bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none z-0"></div>
 
-        <!-- Cabecera Impactante -->
         <div class="text-center mb-10 sm:mb-14 w-full px-2 relative z-10">
             <div class="flex justify-center gap-3 mb-6">
                 <span class="bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full tracking-widest uppercase"><i class="fa-solid fa-rocket mr-1"></i> +500% Conversión</span>
-                <span class="bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full tracking-widest uppercase"><i class="fa-solid fa-brain mr-1"></i> Análisis en 10s</span>
+                <span class="bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full tracking-widest uppercase"><i class="fa-solid fa-brain mr-1"></i> Análisis en 5s</span>
             </div>
             <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-6 leading-tight tracking-tight text-white">
                 El motor creativo <br class="hidden sm:block">para tu <span class="text-gradient">crecimiento</span>
             </h1>
-            <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto font-light">
-                Introduce tu URL o describe tu producto. Nuestro motor procesará métricas, estrategias y copys listos para pautar.
-            </p>
         </div>
 
-        <!-- Formulario Glassmorphism -->
+        <!-- Formulario Glassmorphism: DOBLE ENTRADA -->
         <form id="gen-form" class="glass-card p-6 sm:p-10 rounded-[2rem] w-full relative z-10">
             {% if not user %}
             <div class="absolute inset-0 bg-[#050507]/60 backdrop-blur-xl z-20 flex flex-col items-center justify-center rounded-[2rem] p-6 text-center border border-white/5">
@@ -137,25 +140,32 @@
             </div>
             {% endif %}
             
-            <div class="mb-6 relative">
-                <label class="block text-xs sm:text-sm font-semibold text-gray-300 mb-3 tracking-wide uppercase">Contexto del Negocio</label>
-                <textarea name="input_text" rows="4" required placeholder="Pega tu enlace de Instagram/Web o describe tu producto al detalle..." class="w-full bg-[#030305]/80 border border-white/10 rounded-2xl p-5 text-sm sm:text-base text-white focus:border-cyan-500/50 input-glow outline-none resize-none transition-all placeholder:text-gray-600 font-light"></textarea>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Tu Negocio -->
+                <div class="relative">
+                    <label class="block text-[11px] sm:text-xs font-bold text-cyan-400 mb-3 tracking-wide uppercase"><i class="fa-solid fa-store mr-1"></i> Tu Negocio / Producto</label>
+                    <textarea name="input_text" rows="3" required placeholder="URL de tu web/Instagram o describe tu producto al detalle..." class="w-full bg-[#030305]/80 border border-white/10 rounded-2xl p-4 text-sm text-white focus:border-cyan-500/50 input-glow outline-none resize-none transition-all placeholder:text-gray-600 font-light"></textarea>
+                </div>
+                <!-- Competidor -->
+                <div class="relative">
+                    <label class="block text-[11px] sm:text-xs font-bold text-purple-400 mb-3 tracking-wide uppercase"><i class="fa-solid fa-crosshairs mr-1"></i> Competidor Directo</label>
+                    <textarea name="competitor_text" rows="3" required placeholder="URL de su web/Instagram o nombre de la marca rival..." class="w-full bg-[#030305]/80 border border-white/10 rounded-2xl p-4 text-sm text-white focus:border-purple-500/50 input-glow outline-none resize-none transition-all placeholder:text-gray-600 font-light"></textarea>
+                </div>
             </div>
             
             <div class="mb-8">
-                <label class="block text-xs sm:text-sm font-semibold text-gray-300 mb-3 tracking-wide uppercase">Activos Visuales (Opcional)</label>
+                <label class="block text-[11px] sm:text-xs font-bold text-gray-300 mb-3 tracking-wide uppercase"><i class="fa-solid fa-images mr-1"></i> Activos Visuales (Opcional)</label>
                 <div class="relative group">
                     <input type="file" name="files" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                    <div class="w-full bg-[#030305]/50 border border-dashed border-white/20 rounded-2xl p-6 text-center group-hover:border-cyan-500/50 group-hover:bg-cyan-500/5 transition-all">
-                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-gray-500 group-hover:text-cyan-400 mb-2 transition-colors"></i>
-                        <p class="text-sm text-gray-400 group-hover:text-gray-300">Arrastra imágenes o haz clic para subir</p>
-                        <p class="text-[10px] text-gray-600 mt-1">PNG, JPG (Max 5MB)</p>
+                    <div class="w-full bg-[#030305]/50 border border-dashed border-white/20 rounded-2xl p-4 text-center group-hover:border-cyan-500/50 group-hover:bg-cyan-500/5 transition-all">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl text-gray-500 group-hover:text-cyan-400 mb-2 transition-colors"></i>
+                        <p class="text-xs text-gray-400 group-hover:text-gray-300">Arrastra fotos de tu producto o haz clic</p>
                     </div>
                 </div>
             </div>
 
             <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-[0_0_30px_rgba(0,242,254,0.3)] flex justify-center items-center gap-3 text-sm sm:text-base uppercase tracking-wider relative overflow-hidden">
-                <span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia</span>
+                <span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-bolt"></i> Ejecutar Análisis Comparativo</span>
             </button>
         </form>
 
@@ -163,27 +173,34 @@
         <div id="results-container" class="w-full mt-12 space-y-8 hidden relative z-10">
             <!-- FODA -->
             <div class="glass-card p-6 sm:p-10 rounded-[2rem] border-t border-cyan-500/30">
-                <div class="flex items-center gap-4 mb-8">
+                <div class="flex items-center gap-4 mb-6">
                     <div class="w-10 h-10 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
                         <i class="fa-solid fa-microscope"></i>
                     </div>
-                    <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Análisis Estructural (Gratis)</h3>
+                    <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Diagnóstico Estratégico</h3>
                 </div>
                 <div id="foda-content" class="prose prose-invert prose-cyan max-w-none text-sm sm:text-base text-gray-300 font-light prose-headings:font-display prose-headings:font-bold"></div>
             </div>
 
             <!-- Premium Area -->
             <div id="premium-wrapper" class="relative glass-card rounded-[2rem] overflow-hidden border-t border-purple-500/30">
-                
                 <div class="p-6 sm:p-10">
-                    <div class="flex items-center gap-4 mb-8">
+                    <div class="flex items-center gap-4 mb-6">
                         <div class="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
                             <i class="fa-solid fa-gem"></i>
                         </div>
-                        <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Ingeniería de Conversión (PRO)</h3>
+                        <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Estrategia de Conversión (PRO)</h3>
                     </div>
-                    <div id="premium-content" class="prose prose-invert prose-purple max-w-none text-sm sm:text-base text-gray-300 font-light prose-headings:font-display prose-headings:font-bold">
-                        <p class="text-gray-500 italic flex items-center gap-3"><i class="fa-solid fa-circle-notch fa-spin text-cyan-400"></i> Sintetizando copys y proyecciones financieras...</p>
+                    
+                    <!-- Textos Premium -->
+                    <div id="premium-text-content" class="prose prose-invert prose-purple max-w-none text-sm sm:text-base text-gray-300 font-light prose-headings:font-display prose-headings:font-bold mb-8"></div>
+                    
+                    <!-- Carrusel de Imágenes (Tiempo 2) -->
+                    <div id="premium-images-container" class="mt-8 border-t border-white/10 pt-8 hidden">
+                        <h4 class="font-display text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-image text-cyan-400"></i> Placas Generadas en Alta Definición</h4>
+                        <div id="premium-images-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Inyectadas vía JS -->
+                        </div>
                     </div>
                 </div>
 
@@ -195,8 +212,8 @@
                             <i class="fa-solid fa-lock text-3xl text-purple-400"></i>
                         </div>
                         <h4 class="font-display text-2xl font-bold text-white mb-3">Acceso Restringido</h4>
-                        <p class="text-gray-400 text-sm mb-8 font-light leading-relaxed">Tus créditos iniciales se han agotado. Recarga tu cuenta para desbloquear métricas avanzadas y copys AIDA de alta conversión.</p>
-                        <button onclick="openModal()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-3.5 rounded-xl transition shadow-[0_0_20px_rgba(255,255,255,0.2)] text-sm sm:text-base uppercase tracking-wide">
+                        <p class="text-gray-400 text-sm mb-8 font-light leading-relaxed">Tus créditos se han agotado. Recarga tu cuenta para desbloquear los copys de asalto y las placas visuales HD.</p>
+                        <button onclick="openModal()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-3.5 rounded-xl transition shadow-[0_0_20px_rgba(255,255,255,0.2)] text-sm uppercase tracking-wide">
                             <i class="fa-solid fa-bolt text-yellow-500 mr-2"></i> Recargar Studio
                         </button>
                     </div>
@@ -243,11 +260,15 @@
         const submitBtn = document.getElementById('submit-btn');
         const resultsContainer = document.getElementById('results-container');
         const fodaContent = document.getElementById('foda-content');
-        const premiumContent = document.getElementById('premium-content');
+        const premiumTextContent = document.getElementById('premium-text-content');
+        const premiumImagesContainer = document.getElementById('premium-images-container');
+        const premiumImagesGrid = document.getElementById('premium-images-grid');
         const paywallOverlay = document.getElementById('paywall-overlay');
         
         let fodaText = '';
         let premiumText = '';
+        let isFodaFirstChunk = true;
+        let isPremiumFirstChunk = true;
 
         if(form) {
             form.addEventListener('submit', async (e) => {
@@ -255,20 +276,30 @@
                 const formData = new FormData(form);
                 
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Inicializando Motor AI...';
+                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Conectando al motor...';
                 submitBtn.classList.add('opacity-70');
+                
                 resultsContainer.classList.remove('hidden');
                 
                 setTimeout(() => {
                     resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 100);
 
-                fodaContent.innerHTML = '<div class="animate-pulse space-y-4"><div class="h-4 bg-white/10 rounded w-3/4"></div><div class="h-4 bg-white/10 rounded w-1/2"></div><div class="h-4 bg-white/10 rounded w-5/6"></div></div>';
-                premiumContent.innerHTML = '<p class="text-cyan-400 italic flex items-center gap-3"><i class="fa-solid fa-circle-notch fa-spin"></i> Analizando parámetros avanzados...</p>';
+                // Setup skeletons
+                fodaContent.innerHTML = '<div class="animate-pulse space-y-4"><div class="h-4 bg-white/10 rounded w-3/4"></div><div class="h-4 bg-white/10 rounded w-1/2"></div></div>';
+                premiumTextContent.innerHTML = '<div class="animate-pulse space-y-4"><div class="h-4 bg-white/10 rounded w-full"></div><div class="h-4 bg-white/10 rounded w-5/6"></div></div>';
+                
+                premiumImagesContainer.classList.remove('hidden');
+                premiumImagesGrid.innerHTML = `
+                    <div class="h-48 rounded-xl image-loader border border-white/10 flex items-center justify-center"><i class="fa-solid fa-image text-white/20 text-3xl"></i></div>
+                    <div class="h-48 rounded-xl image-loader border border-white/10 flex items-center justify-center"><i class="fa-solid fa-image text-white/20 text-3xl"></i></div>
+                `;
                 
                 paywallOverlay.classList.add('hidden');
-                premiumContent.parentElement.classList.remove('blur-paywall');
+                premiumTextContent.parentElement.classList.remove('blur-paywall');
+                
                 fodaText = ''; premiumText = '';
+                isFodaFirstChunk = true; isPremiumFirstChunk = true;
 
                 try {
                     const response = await fetch('/api/generate', {
@@ -293,17 +324,30 @@
                                 const data = JSON.parse(line.substring(6));
                                 
                                 if (data.type === 'foda') {
-                                    if(fodaText === '') fodaContent.innerHTML = ''; 
+                                    if(isFodaFirstChunk) { fodaContent.innerHTML = ''; isFodaFirstChunk = false; }
                                     fodaText += data.text;
                                     fodaContent.innerHTML = marked.parse(fodaText);
                                 } 
-                                else if (data.type === 'premium') {
-                                    if(premiumText === '') premiumContent.innerHTML = '';
+                                else if (data.type === 'premium_text') {
+                                    if(isPremiumFirstChunk) { premiumTextContent.innerHTML = ''; isPremiumFirstChunk = false; }
                                     premiumText += data.text;
-                                    premiumContent.innerHTML = marked.parse(premiumText);
+                                    premiumTextContent.innerHTML = marked.parse(premiumText);
+                                }
+                                else if (data.type === 'images') {
+                                    premiumImagesGrid.innerHTML = '';
+                                    data.urls.forEach(url => {
+                                        premiumImagesGrid.innerHTML += `
+                                            <div class="overflow-hidden rounded-xl border border-white/10 shadow-lg relative group">
+                                                <img src="${url}" alt="Ads Banner" class="w-full h-auto object-cover transform group-hover:scale-105 transition duration-500">
+                                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-4">
+                                                    <span class="text-xs font-bold text-white uppercase tracking-wider border border-white/30 px-2 py-1 rounded bg-black/50 backdrop-blur-sm">HD Render</span>
+                                                </div>
+                                            </div>
+                                        `;
+                                    });
                                 }
                                 else if (data.type === 'paywall_active') {
-                                    premiumContent.parentElement.classList.add('blur-paywall');
+                                    premiumTextContent.parentElement.classList.add('blur-paywall');
                                     paywallOverlay.classList.remove('hidden');
                                 }
                                 else if (data.type === 'credit_update') {
@@ -314,10 +358,10 @@
                     }
                 } catch (error) {
                     console.error("Error SSE:", error);
-                    fodaContent.innerHTML = '<p class="text-red-400 bg-red-400/10 p-4 rounded-xl border border-red-400/20"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Error de conexión con el motor AI.</p>';
+                    fodaContent.innerHTML = '<p class="text-red-400 bg-red-400/10 p-4 rounded-xl border border-red-400/20">Error de conexión.</p>';
                 } finally {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia</span>';
+                    submitBtn.innerHTML = '<span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-bolt"></i> Ejecutar Análisis Comparativo</span>';
                     submitBtn.classList.remove('opacity-70');
                 }
             });
