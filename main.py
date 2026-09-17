@@ -2,9 +2,14 @@ import os
 import json
 import asyncio
 import urllib.parse
+import re
+import random
 from typing import List, Optional
 from io import BytesIO
 from PIL import Image
+
+# Para web scraping de las URLs de competidores
+import httpx 
 
 from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
@@ -24,12 +29,9 @@ BASE_URL = os.getenv("BASE_URL", "https://anuncios-web-c4bv.onrender.com").repla
 ADMIN_EMAILS = [e.strip() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 SESSION_SECRET = os.getenv("SESSION_SECRET", "super-secret-session-key")
 
-# Setup GenAI
-genai.configure(api_key=os.getenv("GEMINI_API_KEYS"))
-model = genai.GenerativeModel('gemini-1.5-flash')
-
 app = FastAPI()
 
+# Middlewares Anti-Proxy (Render) y Sesiones Seguras
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, https_only=True, same_site="lax")
 
@@ -68,7 +70,7 @@ async def read_root(request: Request):
 
 @app.get('/auth/login')
 async def login(request: Request):
-    # FIX CRÍTICO: Redirección OAuth exacta requerida
+    # REDIRECT_URI ESTRICTAMENTE MANTENIDO PARA GOOGLE OAUTH
     redirect_uri = "https://anuncios-web-c4bv.onrender.com/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -90,14 +92,26 @@ async def logout(request: Request):
     return RedirectResponse(url='/')
 
 @app.get('/login')
-async def login_redirect():
-    return RedirectResponse(url='/auth/login')
+async def login_redirect(): return RedirectResponse(url='/auth/login')
 
 @app.get('/logout')
-async def logout_redirect():
-    return RedirectResponse(url='/auth/logout')
+async def logout_redirect(): return RedirectResponse(url='/auth/logout')
 
-# --- ENDPOINTS CORE ---
+# --- FUNCIONES CORE: SCRAPING & IA ---
+
+async def fetch_url_text(url: str) -> str:
+    """Extrae texto limpio de una URL usando regex para evitar dependencias pesadas si no están instaladas."""
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(url, follow_redirects=True)
+            resp.raise_for_status()
+            text = re.sub(r'<style.*?>.*?</style>', ' ', resp.text, flags=re.DOTALL | re.IGNORECASE)
+            text = re.sub(r'<script.*?>.*?</script>', ' ', text, flags=re.DOTALL | re.IGNORECASE)
+            text = re.sub(r'<[^>]+>', ' ', text)
+            text = re.sub(r'\s+', ' ', text).strip()
+            return text[:2500]
+    except Exception as e:
+        return f"[Error extrayendo {url}: {str(e)}]"
 
 @app.post("/api/generate")
 async def generate_content(
@@ -123,48 +137,100 @@ async def generate_content(
                 pil_images.append(img)
 
     async def sse_generator():
-        # FASE 1: Análisis FODA Comparativo (Inmediato - Gratis)
-        prompt_foda = f"Analiza este negocio: '{input_text}' comparado frente a su competidor: '{competitor_text}'. Genera un diagnóstico estratégico rápido y un análisis FODA enfocado. Formato Markdown limpio y directo."
+        # Setup GenAI con Rotación de Keys
+        api_keys = [k.strip() for k in os.getenv("GEMINI_API_KEYS", "").split(",") if k.strip()]
+        active_key = random.choice(api_keys) if api_keys else os.getenv("GEMINI_API_KEY", "")
+        genai.configure(api_key=active_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+
+        yield f"data: {json.dumps({'type': 'log', 'text': 'Iniciando pipeline estratégico...'})}\n\n"
+        await asyncio.sleep(0.1)
+
+        # 1. Scraping Concurrente si se detectan URLs
+        url_pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+        my_urls = url_pattern.findall(input_text)
+        comp_urls = url_pattern.findall(competitor_text)
+
+        my_context, comp_context = input_text, competitor_text
+
+        if my_urls or comp_urls:
+            yield f"data: {json.dumps({'type': 'log', 'text': 'Extrayendo datos de URLs en tiempo real...'})}\n\n"
+            tasks = []
+            if my_urls: tasks.append(fetch_url_text(my_urls[0]))
+            else: tasks.append(asyncio.sleep(0)) # dummy task para mantener orden
+            
+            if comp_urls: tasks.append(fetch_url_text(comp_urls[0]))
+            else: tasks.append(asyncio.sleep(0))
+
+            results = await asyncio.gather(*tasks)
+            if my_urls and results[0]: my_context += f"\n[Contenido web escaneado: {results[0]}]"
+            if comp_urls and results[1]: comp_context += f"\n[Contenido web escaneado: {results[1]}]"
+
+        yield f"data: {json.dumps({'type': 'log', 'text': 'Sintetizando Matriz FODA y comparativa de mercado...'})}\n\n"
+
+        # TIEMPO 1: Análisis FODA (Gratis)
+        prompt_foda = f"""Analiza detalladamente mi negocio: '{my_context}' frente al competidor: '{comp_context}'.
+        Devuelve el análisis en este orden y con encabezados Markdown limpios (##):
+        ## Diagnóstico Comparativo
+        (Resumen de la situación en 1 párrafo)
+        ## Puntos Fuertes y Débiles
+        (Lista de ventajas y desventajas directas)
+        ## Matriz FODA
+        (Desglose claro con viñetas: Fortalezas, Oportunidades, Debilidades, Amenazas)."""
+        
         contents_foda = pil_images + [prompt_foda] if pil_images else [prompt_foda]
         
-        response_foda = model.generate_content(contents_foda, stream=True)
-        for chunk in response_foda:
-            yield f"data: {json.dumps({'type': 'foda', 'text': chunk.text})}\n\n"
-            await asyncio.sleep(0.01)
+        try:
+            response_foda = model.generate_content(contents_foda, stream=True)
+            for chunk in response_foda:
+                yield f"data: {json.dumps({'type': 'foda', 'text': chunk.text})}\n\n"
+                await asyncio.sleep(0.01)
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'log', 'text': f'Aviso IA (Rotando llave en próximo intento): {str(e)}'})}\n\n"
 
-        # CONTROL DE PAYWALL SERVIDOR
+        # PAYWALL CHECK SERVIDOR
         if not is_admin and credits <= 0:
+            yield f"data: {json.dumps({'type': 'log', 'text': 'Análisis parcial completado. Requiere recarga.'})}\n\n"
             yield f"data: {json.dumps({'type': 'paywall_active'})}\n\n"
             return 
 
-        # Descontar crédito a usuarios normales
+        # Descuento de crédito
         if not is_admin:
             database.update_credits(email, credits - 1)
             yield f"data: {json.dumps({'type': 'credit_update', 'credits': credits - 1})}\n\n"
 
-        # FASE 2: Contenido Premium (Copys)
-        prompt_premium = f"Actúa como experto en marketing de alto rendimiento. Para el negocio '{input_text}', genera 3 Copys publicitarios con método AIDA diseñados para arrebatarle clientes a '{competitor_text}'. Incluye estimación de métricas referenciales (CTR, CPC). Formato Markdown atractivo."
+        yield f"data: {json.dumps({'type': 'log', 'text': 'Estructurando Copy AIDA y proyecciones financieras...'})}\n\n"
+
+        # TIEMPO 2: Premium Text & Images
+        prompt_premium = f"""Para '{input_text}':
+        Genera un Copy publicitario letal utilizando la metodología AIDA (Atención, Interés, Deseo, Acción) para vencer a '{competitor_text}'.
+        Incluye luego un apartado 'Métricas Estimadas' (CTR %, CPC, y ROI proyectado). Formato Markdown."""
         contents_premium = pil_images + [prompt_premium] if pil_images else [prompt_premium]
         
-        response_premium = model.generate_content(contents_premium, stream=True)
-        for chunk in response_premium:
-            yield f"data: {json.dumps({'type': 'premium_text', 'text': chunk.text})}\n\n"
-            await asyncio.sleep(0.01)
+        try:
+            response_premium = model.generate_content(contents_premium, stream=True)
+            for chunk in response_premium:
+                yield f"data: {json.dumps({'type': 'premium_text', 'text': chunk.text})}\n\n"
+                await asyncio.sleep(0.01)
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'log', 'text': 'Error en fase premium.'})}\n\n"
             
-        # FASE 3: Generación de Placas HD en paralelo (Pollinations)
-        # Se generan prompts optimizados para IA de imagen basados en el texto original
-        base_prompt = urllib.parse.quote(f"Professional hyperrealistic advertising photography for {input_text[:100]}, clean background, 8k resolution, cinematic lighting")
-        creative_prompt = urllib.parse.quote(f"Modern neon aesthetic banner background for {input_text[:100]}, dark mode UI, glowing accents, 4k")
-        
+        yield f"data: {json.dumps({'type': 'log', 'text': 'Renderizando Carrusel HD vía GPU...'})}\n\n"
+
+        # Generador HD Pollinations (1080x1080 Cuadrado)
+        clean_name = my_context[:60].replace('\n', ' ')
+        p1 = urllib.parse.quote(f"Professional cinematic product advertising photography for {clean_name}, hyperrealistic, 8k, studio lighting, highly detailed")
+        p2 = urllib.parse.quote(f"Modern neon aesthetic social media banner background for {clean_name}, dark mode style, glowing cyan and purple accents, 4k")
         images = [
-            f"https://pollinations.ai/p/{base_prompt}?width=1024&height=576&nologo=true",
-            f"https://pollinations.ai/p/{creative_prompt}?width=1024&height=576&nologo=true"
+            f"https://pollinations.ai/p/{p1}?width=1080&height=1080&nologo=true",
+            f"https://pollinations.ai/p/{p2}?width=1080&height=1080&nologo=true"
         ]
         
         yield f"data: {json.dumps({'type': 'images', 'urls': images})}\n\n"
+        yield f"data: {json.dumps({'type': 'log', 'text': 'Proceso 100% Completado.'})}\n\n"
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
-    # Anti-Buffering Headers obligatorios en Render para streaming real-time
+    # Headers obligatorios para bypass del buffering en Nginx/Render
     return StreamingResponse(sse_generator(), media_type="text/event-stream", headers={
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
@@ -178,8 +244,7 @@ async def process_checkout(
     voucher_file: UploadFile = File(None)
 ):
     user = get_current_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="No autorizado")
+    if not user: raise HTTPException(status_code=401, detail="No autorizado")
 
     voucher_b64 = None
     if voucher_file and voucher_file.filename:
@@ -188,9 +253,7 @@ async def process_checkout(
         voucher_b64 = base64.b64encode(contents).decode('utf-8')
 
     database.create_transaction(
-        email=user['email'],
-        amount=15.00,
-        operation_code=operation_code,
-        voucher_b64=voucher_b64
+        email=user['email'], amount=15.00,
+        operation_code=operation_code, voucher_b64=voucher_b64
     )
-    return {"status": "success", "message": "Validación en proceso"}
+    return {"status": "success"}
