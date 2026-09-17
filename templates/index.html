@@ -3,108 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdVance AI - Generador de Anuncios</title>
+    <title>AdVance AI | Pro Studio</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <!-- FontAwesome -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <!-- Marked.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        display: ['"Space Grotesk"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: { dark: '#050507', accent: '#00f2fe', primary: '#4facfe' }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background-color: #08090d; color: #e2e8f0; }
-        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .gradient-text { background: linear-gradient(90deg, #818cf8, #c084fc, #2dd4bf); -webkit-background-clip: text; color: transparent; }
-        .blur-paywall { filter: blur(8px); pointer-events: none; user-select: none; }
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #08090d; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        body { 
+            background-color: #030305; 
+            color: #e2e8f0; 
+            background-image: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(79, 70, 229, 0.15), rgba(255,255,255,0));
+        }
+        .glass-card { 
+            background: rgba(24, 24, 27, 0.4); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .text-gradient { 
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+        .logo-glow {
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+        }
+        .input-glow:focus {
+            box-shadow: 0 0 0 2px rgba(0, 242, 254, 0.3), inset 0 0 10px rgba(0, 242, 254, 0.1);
+        }
+        .metal-badge {
+            background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 50%, #4b5563 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #030305; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
     </style>
 </head>
-<body class="min-h-screen font-sans antialiased flex flex-col w-full overflow-x-hidden">
+<body class="min-h-screen antialiased flex flex-col w-full overflow-x-hidden selection:bg-cyan-500/30">
 
-    <!-- Navbar -->
-    <nav class="glass-panel sticky top-0 z-50 px-4 sm:px-6 py-4 flex flex-wrap justify-between items-center w-full gap-4">
+    <!-- Navbar Futurista -->
+    <nav class="sticky top-0 z-50 px-4 sm:px-8 py-4 flex flex-wrap justify-between items-center w-full glass-card border-b-0 border-t-0 border-l-0 border-r-0 border-b border-white/5">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-white shadow-lg">A</div>
-            <span class="text-lg sm:text-xl font-bold tracking-wider">AdVance <span class="gradient-text">AI</span></span>
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4facfe] to-[#00f2fe] flex items-center justify-center text-white logo-glow">
+                <i class="fa-solid fa-layer-group text-lg"></i>
+            </div>
+            <div class="flex flex-col leading-none">
+                <span class="font-display text-xl font-bold tracking-wide text-white">AdVance <span class="text-cyan-400">AI</span></span>
+                <span class="text-[9px] font-bold tracking-[0.2em] metal-badge border border-gray-600/40 rounded px-1 mt-0.5 w-max">PRO STUDIO</span>
+            </div>
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center mt-2 sm:mt-0">
             {% if user %}
-                <div class="flex items-center gap-3 sm:gap-4 flex-wrap justify-end">
-                    <span class="text-xs sm:text-sm text-gray-400 flex items-center">
-                        <i class="fa-solid fa-coins text-yellow-400 mr-1"></i> 
-                        <span id="credit-count">{{ user.credits if not is_admin else '∞' }}</span>
-                    </span>
-                    <span class="text-xs sm:text-sm font-medium hidden sm:inline-block">{{ user.email }}</span>
+                <div class="flex items-center gap-4 flex-wrap justify-end">
+                    <div class="bg-black/40 border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-yellow-400 text-xs"></i> 
+                        <span id="credit-count" class="text-sm font-semibold">{{ user.credits if not is_admin else '∞' }}</span>
+                    </div>
+                    <span class="text-xs sm:text-sm font-medium text-gray-300 hidden sm:inline-block">{{ user.email }}</span>
                     {% if is_admin %}
-                        <a href="/admin" class="text-[10px] sm:text-xs bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 px-2 py-1 rounded transition hover:bg-indigo-600/50">Admin</a>
+                        <a href="/admin" class="text-[10px] font-bold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded-full transition hover:bg-cyan-500/20 uppercase tracking-wide">Admin</a>
                     {% endif %}
-                    <a href="/auth/logout" class="text-sm hover:text-red-400 transition ml-1" title="Cerrar sesión"><i class="fa-solid fa-sign-out-alt"></i></a>
+                    <a href="/auth/logout" class="text-gray-400 hover:text-white transition ml-2 bg-white/5 p-2 rounded-full border border-white/5" title="Cerrar sesión"><i class="fa-solid fa-right-from-bracket"></i></a>
                 </div>
             {% else %}
-                <a href="/auth/login" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition shadow-[0_0_15px_rgba(79,70,229,0.3)]">Iniciar Sesión</a>
+                <a href="/auth/login" class="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2 backdrop-blur-sm">
+                    <i class="fa-brands fa-google"></i> Acceso Studio
+                </a>
             {% endif %}
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-3xl mx-auto mt-6 sm:mt-10 mb-12">
+    <main class="flex-grow flex flex-col items-center justify-start p-4 sm:p-6 w-full max-w-4xl mx-auto mt-8 sm:mt-12 mb-20 relative">
         
-        <div class="text-center mb-8 sm:mb-10 w-full px-2">
-            <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight">Potencia tus ventas con <span class="gradient-text">IA</span></h1>
-            <p class="text-sm sm:text-base text-gray-400 max-w-xl mx-auto">Ingresa la URL de tu negocio o describe lo que vendes. Nosotros diseñamos la estrategia.</p>
+        <!-- Background Elements -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-64 bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none z-0"></div>
+
+        <!-- Cabecera Impactante -->
+        <div class="text-center mb-10 sm:mb-14 w-full px-2 relative z-10">
+            <div class="flex justify-center gap-3 mb-6">
+                <span class="bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full tracking-widest uppercase"><i class="fa-solid fa-rocket mr-1"></i> +500% Conversión</span>
+                <span class="bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full tracking-widest uppercase"><i class="fa-solid fa-brain mr-1"></i> Análisis en 10s</span>
+            </div>
+            <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-6 leading-tight tracking-tight text-white">
+                El motor creativo <br class="hidden sm:block">para tu <span class="text-gradient">crecimiento</span>
+            </h1>
+            <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto font-light">
+                Introduce tu URL o describe tu producto. Nuestro motor procesará métricas, estrategias y copys listos para pautar.
+            </p>
         </div>
 
-        <!-- Formulario -->
-        <form id="gen-form" class="glass-panel p-5 sm:p-8 rounded-2xl w-full shadow-2xl relative">
+        <!-- Formulario Glassmorphism -->
+        <form id="gen-form" class="glass-card p-6 sm:p-10 rounded-[2rem] w-full relative z-10">
             {% if not user %}
-            <div class="absolute inset-0 bg-[#08090d]/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl p-6 text-center">
-                <i class="fa-solid fa-lock text-4xl text-gray-500 mb-4"></i>
-                <p class="mb-5 text-gray-300 text-sm sm:text-base">Inicia sesión para utilizar nuestra herramienta de IA</p>
-                <a href="/auth/login" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg w-full max-w-xs">Continuar con Google</a>
+            <div class="absolute inset-0 bg-[#050507]/60 backdrop-blur-xl z-20 flex flex-col items-center justify-center rounded-[2rem] p-6 text-center border border-white/5">
+                <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10">
+                    <i class="fa-solid fa-lock text-2xl text-cyan-400"></i>
+                </div>
+                <h3 class="font-display text-2xl font-bold text-white mb-2">Desbloquea el Studio</h3>
+                <p class="mb-8 text-gray-400 text-sm max-w-xs">Inicia sesión con Google para acceder al motor de inteligencia artificial.</p>
+                <a href="/auth/login" class="bg-white text-black hover:bg-gray-200 px-8 py-3 rounded-full font-bold transition flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                    <i class="fa-brands fa-google"></i> Continuar con Google
+                </a>
             </div>
             {% endif %}
             
-            <div class="mb-5">
-                <label class="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Descripción o URL del producto/servicio</label>
-                <textarea name="input_text" rows="4" required placeholder="Ej: https://instagram.com/mi-tienda o 'Vendo zapatillas deportivas en Lima...'" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm sm:text-base text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none resize-none transition shadow-inner"></textarea>
+            <div class="mb-6 relative">
+                <label class="block text-xs sm:text-sm font-semibold text-gray-300 mb-3 tracking-wide uppercase">Contexto del Negocio</label>
+                <textarea name="input_text" rows="4" required placeholder="Pega tu enlace de Instagram/Web o describe tu producto al detalle..." class="w-full bg-[#030305]/80 border border-white/10 rounded-2xl p-5 text-sm sm:text-base text-white focus:border-cyan-500/50 input-glow outline-none resize-none transition-all placeholder:text-gray-600 font-light"></textarea>
             </div>
             
             <div class="mb-8">
-                <label class="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Imágenes referenciales (Opcional)</label>
-                <input type="file" name="files" multiple accept="image/*" class="w-full text-xs sm:text-sm text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 transition cursor-pointer border border-white/5 rounded-xl p-1 bg-white/5">
+                <label class="block text-xs sm:text-sm font-semibold text-gray-300 mb-3 tracking-wide uppercase">Activos Visuales (Opcional)</label>
+                <div class="relative group">
+                    <input type="file" name="files" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div class="w-full bg-[#030305]/50 border border-dashed border-white/20 rounded-2xl p-6 text-center group-hover:border-cyan-500/50 group-hover:bg-cyan-500/5 transition-all">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-gray-500 group-hover:text-cyan-400 mb-2 transition-colors"></i>
+                        <p class="text-sm text-gray-400 group-hover:text-gray-300">Arrastra imágenes o haz clic para subir</p>
+                        <p class="text-[10px] text-gray-600 mt-1">PNG, JPG (Max 5MB)</p>
+                    </div>
+                </div>
             </div>
 
-            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition shadow-[0_0_20px_rgba(99,102,241,0.4)] flex justify-center items-center gap-2 text-sm sm:text-base">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia
+            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-[0_0_30px_rgba(0,242,254,0.3)] flex justify-center items-center gap-3 text-sm sm:text-base uppercase tracking-wider relative overflow-hidden">
+                <span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia</span>
             </button>
         </form>
 
         <!-- Resultados -->
-        <div id="results-container" class="w-full mt-10 space-y-6 hidden">
+        <div id="results-container" class="w-full mt-12 space-y-8 hidden relative z-10">
             <!-- FODA -->
-            <div class="glass-panel p-5 sm:p-8 rounded-2xl">
-                <h3 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2 text-cyan-400 border-b border-white/10 pb-3"><i class="fa-solid fa-chart-pie"></i> Análisis FODA (Gratis)</h3>
-                <div id="foda-content" class="prose prose-invert max-w-none text-sm sm:text-base text-gray-300"></div>
+            <div class="glass-card p-6 sm:p-10 rounded-[2rem] border-t border-cyan-500/30">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-10 h-10 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+                        <i class="fa-solid fa-microscope"></i>
+                    </div>
+                    <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Análisis Estructural (Gratis)</h3>
+                </div>
+                <div id="foda-content" class="prose prose-invert prose-cyan max-w-none text-sm sm:text-base text-gray-300 font-light prose-headings:font-display prose-headings:font-bold"></div>
             </div>
 
             <!-- Premium Area -->
-            <div id="premium-wrapper" class="relative glass-panel rounded-2xl overflow-hidden">
+            <div id="premium-wrapper" class="relative glass-card rounded-[2rem] overflow-hidden border-t border-purple-500/30">
                 
-                <div class="p-5 sm:p-8">
-                    <h3 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2 text-purple-400 border-b border-white/10 pb-3"><i class="fa-solid fa-crown"></i> Copys & Métricas (Premium)</h3>
-                    <div id="premium-content" class="prose prose-invert max-w-none text-sm sm:text-base text-gray-300">
-                        <p class="text-gray-500 italic flex items-center gap-2"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i> Generando contenido de alta conversión...</p>
+                <div class="p-6 sm:p-10">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                            <i class="fa-solid fa-gem"></i>
+                        </div>
+                        <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Ingeniería de Conversión (PRO)</h3>
+                    </div>
+                    <div id="premium-content" class="prose prose-invert prose-purple max-w-none text-sm sm:text-base text-gray-300 font-light prose-headings:font-display prose-headings:font-bold">
+                        <p class="text-gray-500 italic flex items-center gap-3"><i class="fa-solid fa-circle-notch fa-spin text-cyan-400"></i> Sintetizando copys y proyecciones financieras...</p>
                     </div>
                 </div>
 
                 <!-- Paywall Overlay -->
-                <div id="paywall-overlay" class="absolute inset-0 bg-[#08090d]/70 backdrop-blur-md z-20 flex flex-col items-center justify-center hidden p-4">
-                    <div class="bg-[#11131e] p-6 sm:p-8 rounded-2xl border border-white/10 text-center w-full max-w-sm shadow-2xl relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                        <i class="fa-solid fa-lock text-4xl sm:text-5xl text-indigo-500 mb-4 drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]"></i>
-                        <h4 class="text-xl sm:text-2xl font-bold mb-2">Contenido Bloqueado</h4>
-                        <p class="text-gray-400 text-xs sm:text-sm mb-6">Te has quedado sin créditos. Recarga para ver los copys AIDA y métricas financieras.</p>
-                        <button onclick="openModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm sm:text-base">
-                            Recargar Créditos
+                <div id="paywall-overlay" class="absolute inset-0 bg-[#030305]/80 backdrop-blur-xl z-20 flex flex-col items-center justify-center hidden p-4">
+                    <div class="glass-card p-8 sm:p-10 rounded-3xl border border-white/10 text-center w-full max-w-md shadow-2xl relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-purple-500"></div>
+                        <div class="w-20 h-20 mx-auto bg-black/50 rounded-full flex items-center justify-center mb-6 border border-white/5 shadow-[0_0_30px_rgba(168,85,247,0.2)]">
+                            <i class="fa-solid fa-lock text-3xl text-purple-400"></i>
+                        </div>
+                        <h4 class="font-display text-2xl font-bold text-white mb-3">Acceso Restringido</h4>
+                        <p class="text-gray-400 text-sm mb-8 font-light leading-relaxed">Tus créditos iniciales se han agotado. Recarga tu cuenta para desbloquear métricas avanzadas y copys AIDA de alta conversión.</p>
+                        <button onclick="openModal()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-3.5 rounded-xl transition shadow-[0_0_20px_rgba(255,255,255,0.2)] text-sm sm:text-base uppercase tracking-wide">
+                            <i class="fa-solid fa-bolt text-yellow-500 mr-2"></i> Recargar Studio
                         </button>
                     </div>
                 </div>
@@ -114,33 +207,33 @@
     </main>
 
     <!-- Modal Pago Local (Perú) -->
-    <div id="payment-modal" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm transition-opacity">
-        <div class="bg-[#11131e] border border-white/10 rounded-2xl p-6 w-full max-w-sm relative shadow-2xl">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition"><i class="fa-solid fa-times text-xl"></i></button>
-            <h3 class="text-xl sm:text-2xl font-bold mb-1 text-center">Recargar Saldo</h3>
-            <p class="text-center text-xs sm:text-sm text-gray-400 mb-6">Paquete Emprendedor: S/ 15.00 (5 Créditos)</p>
+    <div id="payment-modal" class="fixed inset-0 bg-black/90 z-[100] hidden items-center justify-center p-4 backdrop-blur-md transition-opacity">
+        <div class="glass-card border border-white/10 rounded-[2rem] p-8 w-full max-w-sm relative shadow-2xl bg-[#0a0a0c]">
+            <button onclick="closeModal()" class="absolute top-5 right-5 text-gray-500 hover:text-white transition bg-white/5 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
+            <h3 class="font-display text-2xl font-bold mb-2 text-center text-white">Paquete Pro</h3>
+            <p class="text-center text-sm text-cyan-400 mb-8 font-medium bg-cyan-500/10 py-1 rounded-full border border-cyan-500/20">5 Créditos por S/ 15.00</p>
 
-            <div class="flex justify-center gap-4 mb-6">
-                <div class="text-center">
-                    <div class="bg-[#00BFA5] text-white font-bold py-2 px-6 rounded-xl mb-2 shadow-lg">YAPE / PLIN</div>
-                    <span class="text-sm font-mono tracking-widest">999 999 999</span>
+            <div class="flex justify-center gap-4 mb-8">
+                <div class="text-center w-full">
+                    <div class="bg-[#00BFA5] text-white font-bold py-3 px-6 rounded-xl mb-2 shadow-lg tracking-widest text-lg">YAPE / PLIN</div>
+                    <span class="text-lg font-display tracking-[0.2em] text-white">999 999 999</span>
                 </div>
             </div>
 
-            <form id="payment-form" class="space-y-4">
+            <form id="payment-form" class="space-y-5">
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">Número de Operación</label>
-                    <input type="text" name="operation_code" placeholder="Ej: 12345678" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-2 uppercase tracking-wider">Número de Operación</label>
+                    <input type="text" name="operation_code" placeholder="Ej: 12345678" class="w-full bg-black/50 border border-white/10 rounded-xl p-3.5 text-sm text-white focus:border-cyan-500/50 input-glow outline-none transition">
                 </div>
-                <div class="text-center text-xs text-gray-500 relative">
+                <div class="text-center text-xs text-gray-600 relative">
                     <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
-                    <span class="relative bg-[#11131e] px-2">O</span>
+                    <span class="relative bg-[#0a0a0c] px-3 font-bold">O</span>
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">Captura de Pantalla</label>
-                    <input type="file" name="voucher_file" accept="image/*" class="w-full text-sm text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-white/10 file:text-white cursor-pointer border border-white/5 bg-white/5 rounded-lg p-1">
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-2 uppercase tracking-wider">Comprobante (Captura)</label>
+                    <input type="file" name="voucher_file" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer border border-white/10 bg-black/50 rounded-xl p-1.5 transition">
                 </div>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl mt-4 transition shadow-lg text-sm">Enviar Validación</button>
+                <button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3.5 rounded-xl mt-6 transition shadow-[0_0_15px_rgba(0,242,254,0.3)] text-sm uppercase tracking-wide">Validar Pago</button>
             </form>
         </div>
     </div>
@@ -162,17 +255,16 @@
                 const formData = new FormData(form);
                 
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Procesando...';
-                submitBtn.classList.add('opacity-75');
+                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Inicializando Motor AI...';
+                submitBtn.classList.add('opacity-70');
                 resultsContainer.classList.remove('hidden');
                 
-                // Scroll suave a los resultados
                 setTimeout(() => {
                     resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 100);
 
-                fodaContent.innerHTML = '<div class="animate-pulse flex space-x-4"><div class="flex-1 space-y-4 py-1"><div class="h-2 bg-gray-600 rounded"></div><div class="space-y-3"><div class="grid grid-cols-3 gap-4"><div class="h-2 bg-gray-600 rounded col-span-2"></div><div class="h-2 bg-gray-600 rounded col-span-1"></div></div><div class="h-2 bg-gray-600 rounded"></div></div></div></div>';
-                premiumContent.innerHTML = '<p class="text-gray-500 italic flex items-center gap-2"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i> Generando contenido de alta conversión...</p>';
+                fodaContent.innerHTML = '<div class="animate-pulse space-y-4"><div class="h-4 bg-white/10 rounded w-3/4"></div><div class="h-4 bg-white/10 rounded w-1/2"></div><div class="h-4 bg-white/10 rounded w-5/6"></div></div>';
+                premiumContent.innerHTML = '<p class="text-cyan-400 italic flex items-center gap-3"><i class="fa-solid fa-circle-notch fa-spin"></i> Analizando parámetros avanzados...</p>';
                 
                 paywallOverlay.classList.add('hidden');
                 premiumContent.parentElement.classList.remove('blur-paywall');
@@ -194,19 +286,19 @@
                         
                         buffer += decoder.decode(value, { stream: true });
                         const lines = buffer.split('\n\n');
-                        buffer = lines.pop(); // Guardar el fragmento incompleto
+                        buffer = lines.pop();
 
                         for (const line of lines) {
                             if (line.startsWith('data: ')) {
                                 const data = JSON.parse(line.substring(6));
                                 
                                 if (data.type === 'foda') {
-                                    if(fodaText === '') fodaContent.innerHTML = ''; // Limpiar loader
+                                    if(fodaText === '') fodaContent.innerHTML = ''; 
                                     fodaText += data.text;
                                     fodaContent.innerHTML = marked.parse(fodaText);
                                 } 
                                 else if (data.type === 'premium') {
-                                    if(premiumText === '') premiumContent.innerHTML = ''; // Limpiar loader
+                                    if(premiumText === '') premiumContent.innerHTML = '';
                                     premiumText += data.text;
                                     premiumContent.innerHTML = marked.parse(premiumText);
                                 }
@@ -222,21 +314,20 @@
                     }
                 } catch (error) {
                     console.error("Error SSE:", error);
-                    fodaContent.innerHTML = '<p class="text-red-400">Ocurrió un error al conectar con el servidor.</p>';
+                    fodaContent.innerHTML = '<p class="text-red-400 bg-red-400/10 p-4 rounded-xl border border-red-400/20"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Error de conexión con el motor AI.</p>';
                 } finally {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia';
-                    submitBtn.classList.remove('opacity-75');
+                    submitBtn.innerHTML = '<span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia</span>';
+                    submitBtn.classList.remove('opacity-70');
                 }
             });
         }
 
-        // Modal Logic
         const modal = document.getElementById('payment-modal');
         function openModal() { 
             modal.classList.remove('hidden'); 
             modal.classList.add('flex');
-            document.body.style.overflow = 'hidden'; // Prevenir scroll de fondo
+            document.body.style.overflow = 'hidden'; 
         }
         function closeModal() { 
             modal.classList.add('hidden'); 
@@ -250,18 +341,18 @@
                 e.preventDefault();
                 const btn = e.target.querySelector('button');
                 const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Validando...';
                 btn.disabled = true;
                 
                 try {
                     const formData = new FormData(e.target);
                     await fetch('/api/checkout', { method: 'POST', body: formData });
                     
-                    alert('✅ Tu comprobante ha sido enviado. Un administrador validará tu pago en breve.');
+                    alert('✅ Comprobante recibido. Un administrador de Studio validará tu recarga pronto.');
                     closeModal();
                     e.target.reset();
                 } catch (error) {
-                    alert('❌ Error al enviar el comprobante. Inténtalo de nuevo.');
+                    alert('❌ Ocurrió un error. Inténtalo nuevamente.');
                 } finally {
                     btn.innerHTML = originalText;
                     btn.disabled = false;

@@ -19,8 +19,8 @@ import database
 
 load_dotenv()
 
-# Variables de Entorno y Configuración
-BASE_URL = os.getenv("BASE_URL", "https://anuncios-web-c4bv.onrender.com").rstrip("/")
+# FIX CRÍTICO OAUTH: Forzar HTTPS estrictamente reemplazando el esquema si Render inyecta HTTP
+BASE_URL = os.getenv("BASE_URL", "https://anuncios-web-c4bv.onrender.com").replace("http://", "https://").rstrip("/")
 ADMIN_EMAILS = [e.strip() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 SESSION_SECRET = os.getenv("SESSION_SECRET", "super-secret-session-key")
 
@@ -67,10 +67,9 @@ async def read_root(request: Request):
         context={"user": user, "is_admin": is_admin}
     )
 
-# --- RUTAS OAUTH CORRECTAS DE FASTAPI ---
-
 @app.get('/auth/login')
 async def login(request: Request):
+    # Forzar redirección con la URL segura validada
     redirect_uri = f"{BASE_URL}/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -91,7 +90,6 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url='/')
 
-# Redirecciones de seguridad por si index.html aún apunta a /login o /logout
 @app.get('/login')
 async def login_redirect():
     return RedirectResponse(url='/auth/login')
@@ -116,7 +114,6 @@ async def generate_content(
     is_admin = email in ADMIN_EMAILS
     credits = user['credits']
 
-    # Procesar imágenes si existen
     pil_images = []
     if files:
         for file in files:
@@ -126,8 +123,8 @@ async def generate_content(
                 pil_images.append(img)
 
     async def sse_generator():
-        # FASE 1: Análisis FODA (Gratis para todos)
-        prompt_foda = f"Realiza un análisis FODA rápido e incisivo para este negocio basado en: {input_text}. Formato Markdown limpio y conciso."
+        # FASE 1: Análisis FODA (Gratis)
+        prompt_foda = f"Realiza un análisis FODA rápido e incisivo para este negocio basado en: {input_text}. Formato Markdown limpio."
         contents_foda = pil_images + [prompt_foda] if pil_images else [prompt_foda]
         
         response_foda = model.generate_content(contents_foda, stream=True)
@@ -137,7 +134,6 @@ async def generate_content(
 
         # CONTROL DE PAYWALL SERVIDOR
         if not is_admin and credits <= 0:
-            # Emite señal para bloquear UI y detener generación real
             yield f"data: {json.dumps({'type': 'paywall_active'})}\n\n"
             return 
 
@@ -146,8 +142,8 @@ async def generate_content(
             database.update_credits(email, credits - 1)
             yield f"data: {json.dumps({'type': 'credit_update', 'credits': credits - 1})}\n\n"
 
-        # FASE 2: Contenido Premium (Copys, Métricas)
-        prompt_premium = f"Genera: 1) 3 Copys publicitarios con método AIDA. 2) Estimación de métricas referenciales (CTR esperado, CPC, ROI). Basado en: {input_text}. Formato Markdown atractivo."
+        # FASE 2: Contenido Premium
+        prompt_premium = f"Genera: 1) 3 Copys publicitarios con método AIDA. 2) Estimación de métricas referenciales (CTR, CPC, ROI). Basado en: {input_text}. Formato Markdown."
         contents_premium = pil_images + [prompt_premium] if pil_images else [prompt_premium]
         
         response_premium = model.generate_content(contents_premium, stream=True)
@@ -177,32 +173,8 @@ async def process_checkout(
 
     database.create_transaction(
         email=user['email'],
-        amount=15.00, # Monto fijo demo
+        amount=15.00,
         operation_code=operation_code,
         voucher_b64=voucher_b64
     )
     return {"status": "success", "message": "Validación en proceso"}
-
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard(request: Request):
-    user = get_current_user(request)
-    if not user or user['email'] not in ADMIN_EMAILS:
-        return RedirectResponse(url='/')
-    
-    transactions = database.get_pending_transactions()
-    return templates.TemplateResponse(
-        request=request, 
-        name="admin.html", 
-        context={"user": user, "transactions": transactions}
-    )
-
-@app.post("/admin/tx/{tx_id}/{action}")
-async def resolve_transaction(request: Request, tx_id: int, action: str):
-    user = get_current_user(request)
-    if not user or user['email'] not in ADMIN_EMAILS:
-        raise HTTPException(status_code=403)
-    
-    if action in ['approved', 'rejected']:
-        database.update_transaction_status(tx_id, action)
-    return {"status": "success"}
-
