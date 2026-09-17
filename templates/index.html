@@ -18,89 +18,92 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     </style>
 </head>
-<body class="min-h-screen font-sans antialiased flex flex-col">
+<body class="min-h-screen font-sans antialiased flex flex-col w-full overflow-x-hidden">
 
     <!-- Navbar -->
-    <nav class="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
+    <nav class="glass-panel sticky top-0 z-50 px-4 sm:px-6 py-4 flex flex-wrap justify-between items-center w-full gap-4">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-white">A</div>
-            <span class="text-xl font-bold tracking-wider">AdVance <span class="gradient-text">AI</span></span>
+            <div class="w-8 h-8 rounded bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-white shadow-lg">A</div>
+            <span class="text-lg sm:text-xl font-bold tracking-wider">AdVance <span class="gradient-text">AI</span></span>
         </div>
-        <div>
+        <div class="flex items-center">
             {% if user %}
-                <div class="flex items-center gap-4">
-                    <span class="text-sm text-gray-400">
+                <div class="flex items-center gap-3 sm:gap-4 flex-wrap justify-end">
+                    <span class="text-xs sm:text-sm text-gray-400 flex items-center">
                         <i class="fa-solid fa-coins text-yellow-400 mr-1"></i> 
                         <span id="credit-count">{{ user.credits if not is_admin else '∞' }}</span>
                     </span>
-                    <span class="text-sm font-medium">{{ user.email }}</span>
-                    {% if is_admin % <a href="/admin" class="text-xs bg-indigo-600/30 text-indigo-300 px-2 py-1 rounded">Admin</a> {% endif %}
-                    <a href="/logout" class="text-sm hover:text-red-400 transition"><i class="fa-solid fa-sign-out-alt"></i></a>
+                    <span class="text-xs sm:text-sm font-medium hidden sm:inline-block">{{ user.email }}</span>
+                    {% if is_admin %}
+                        <a href="/admin" class="text-[10px] sm:text-xs bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 px-2 py-1 rounded transition hover:bg-indigo-600/50">Admin</a>
+                    {% endif %}
+                    <a href="/auth/logout" class="text-sm hover:text-red-400 transition ml-1" title="Cerrar sesión"><i class="fa-solid fa-sign-out-alt"></i></a>
                 </div>
             {% else %}
-                <a href="/login" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition shadow-[0_0_15px_rgba(79,70,229,0.3)]">Iniciar Sesión</a>
+                <a href="/auth/login" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition shadow-[0_0_15px_rgba(79,70,229,0.3)]">Iniciar Sesión</a>
             {% endif %}
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center p-6 w-full max-w-4xl mx-auto mt-10">
+    <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-3xl mx-auto mt-6 sm:mt-10 mb-12">
         
-        <div class="text-center mb-10 w-full">
-            <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Potencia tus ventas con <span class="gradient-text">IA</span></h1>
-            <p class="text-gray-400">Ingresa la URL de tu negocio o describe lo que vendes. Nosotros hacemos el resto.</p>
+        <div class="text-center mb-8 sm:mb-10 w-full px-2">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight">Potencia tus ventas con <span class="gradient-text">IA</span></h1>
+            <p class="text-sm sm:text-base text-gray-400 max-w-xl mx-auto">Ingresa la URL de tu negocio o describe lo que vendes. Nosotros diseñamos la estrategia.</p>
         </div>
 
         <!-- Formulario -->
-        <form id="gen-form" class="glass-panel p-6 rounded-2xl w-full shadow-2xl relative">
+        <form id="gen-form" class="glass-panel p-5 sm:p-8 rounded-2xl w-full shadow-2xl relative">
             {% if not user %}
-            <div class="absolute inset-0 bg-[#08090d]/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl">
-                <i class="fa-solid fa-lock text-4xl text-gray-500 mb-3"></i>
-                <p class="mb-4">Inicia sesión para utilizar la herramienta</p>
-                <a href="/login" class="bg-indigo-600 text-white px-6 py-2 rounded-lg">Continuar con Google</a>
+            <div class="absolute inset-0 bg-[#08090d]/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl p-6 text-center">
+                <i class="fa-solid fa-lock text-4xl text-gray-500 mb-4"></i>
+                <p class="mb-5 text-gray-300 text-sm sm:text-base">Inicia sesión para utilizar nuestra herramienta de IA</p>
+                <a href="/auth/login" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg w-full max-w-xs">Continuar con Google</a>
             </div>
             {% endif %}
             
             <div class="mb-5">
-                <label class="block text-sm font-medium text-gray-300 mb-2">Descripción o URL del producto/servicio</label>
-                <textarea name="input_text" rows="3" required placeholder="Ej: https://instagram.com/mi-tienda o 'Vendo zapatillas deportivas en Lima...'" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none transition"></textarea>
+                <label class="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Descripción o URL del producto/servicio</label>
+                <textarea name="input_text" rows="4" required placeholder="Ej: https://instagram.com/mi-tienda o 'Vendo zapatillas deportivas en Lima...'" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm sm:text-base text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none resize-none transition shadow-inner"></textarea>
             </div>
             
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-300 mb-2">Imágenes referenciales (Opcional)</label>
-                <input type="file" name="files" multiple accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 transition cursor-pointer">
+            <div class="mb-8">
+                <label class="block text-xs sm:text-sm font-medium text-gray-300 mb-2">Imágenes referenciales (Opcional)</label>
+                <input type="file" name="files" multiple accept="image/*" class="w-full text-xs sm:text-sm text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 transition cursor-pointer border border-white/5 rounded-xl p-1 bg-white/5">
             </div>
 
-            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl transition shadow-[0_0_20px_rgba(99,102,241,0.4)] flex justify-center items-center gap-2">
+            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition shadow-[0_0_20px_rgba(99,102,241,0.4)] flex justify-center items-center gap-2 text-sm sm:text-base">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia
             </button>
         </form>
 
         <!-- Resultados -->
-        <div id="results-container" class="w-full mt-8 space-y-6 hidden">
+        <div id="results-container" class="w-full mt-10 space-y-6 hidden">
             <!-- FODA -->
-            <div class="glass-panel p-6 rounded-2xl">
-                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-cyan-400"><i class="fa-solid fa-chart-pie"></i> Análisis FODA (Gratis)</h3>
-                <div id="foda-content" class="prose prose-invert max-w-none text-gray-300"></div>
+            <div class="glass-panel p-5 sm:p-8 rounded-2xl">
+                <h3 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2 text-cyan-400 border-b border-white/10 pb-3"><i class="fa-solid fa-chart-pie"></i> Análisis FODA (Gratis)</h3>
+                <div id="foda-content" class="prose prose-invert max-w-none text-sm sm:text-base text-gray-300"></div>
             </div>
 
             <!-- Premium Area -->
             <div id="premium-wrapper" class="relative glass-panel rounded-2xl overflow-hidden">
                 
-                <div class="p-6">
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-purple-400"><i class="fa-solid fa-crown"></i> Copys & Métricas (Premium)</h3>
-                    <div id="premium-content" class="prose prose-invert max-w-none text-gray-300">
-                        <p class="text-gray-500 italic">Generando contenido de alta conversión...</p>
+                <div class="p-5 sm:p-8">
+                    <h3 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2 text-purple-400 border-b border-white/10 pb-3"><i class="fa-solid fa-crown"></i> Copys & Métricas (Premium)</h3>
+                    <div id="premium-content" class="prose prose-invert max-w-none text-sm sm:text-base text-gray-300">
+                        <p class="text-gray-500 italic flex items-center gap-2"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i> Generando contenido de alta conversión...</p>
                     </div>
                 </div>
 
                 <!-- Paywall Overlay -->
-                <div id="paywall-overlay" class="absolute inset-0 bg-[#08090d]/60 backdrop-blur-md z-20 flex flex-col items-center justify-center hidden">
-                    <div class="bg-[#11131e] p-8 rounded-2xl border border-white/10 text-center max-w-sm shadow-2xl">
-                        <i class="fa-solid fa-lock text-5xl text-indigo-500 mb-4"></i>
-                        <h4 class="text-2xl font-bold mb-2">Contenido Bloqueado</h4>
-                        <p class="text-gray-400 text-sm mb-6">Te has quedado sin créditos. Recarga para ver los copys AIDA y métricas financieras.</p>
-                        <button onclick="openModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition">
+                <div id="paywall-overlay" class="absolute inset-0 bg-[#08090d]/70 backdrop-blur-md z-20 flex flex-col items-center justify-center hidden p-4">
+                    <div class="bg-[#11131e] p-6 sm:p-8 rounded-2xl border border-white/10 text-center w-full max-w-sm shadow-2xl relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                        <i class="fa-solid fa-lock text-4xl sm:text-5xl text-indigo-500 mb-4 drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]"></i>
+                        <h4 class="text-xl sm:text-2xl font-bold mb-2">Contenido Bloqueado</h4>
+                        <p class="text-gray-400 text-xs sm:text-sm mb-6">Te has quedado sin créditos. Recarga para ver los copys AIDA y métricas financieras.</p>
+                        <button onclick="openModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm sm:text-base">
                             Recargar Créditos
                         </button>
                     </div>
@@ -112,29 +115,32 @@
 
     <!-- Modal Pago Local (Perú) -->
     <div id="payment-modal" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm transition-opacity">
-        <div class="bg-[#11131e] border border-white/10 rounded-2xl p-6 w-full max-w-md relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
-            <h3 class="text-2xl font-bold mb-1 text-center">Recargar Saldo</h3>
-            <p class="text-center text-sm text-gray-400 mb-6">Paquete Emprendedor: S/ 15.00 (5 Créditos)</p>
+        <div class="bg-[#11131e] border border-white/10 rounded-2xl p-6 w-full max-w-sm relative shadow-2xl">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition"><i class="fa-solid fa-times text-xl"></i></button>
+            <h3 class="text-xl sm:text-2xl font-bold mb-1 text-center">Recargar Saldo</h3>
+            <p class="text-center text-xs sm:text-sm text-gray-400 mb-6">Paquete Emprendedor: S/ 15.00 (5 Créditos)</p>
 
             <div class="flex justify-center gap-4 mb-6">
                 <div class="text-center">
-                    <div class="bg-[#00BFA5] text-white font-bold py-2 px-4 rounded-xl mb-1">YAPE / PLIN</div>
-                    <span class="text-sm">999 999 999</span>
+                    <div class="bg-[#00BFA5] text-white font-bold py-2 px-6 rounded-xl mb-2 shadow-lg">YAPE / PLIN</div>
+                    <span class="text-sm font-mono tracking-widest">999 999 999</span>
                 </div>
             </div>
 
             <form id="payment-form" class="space-y-4">
                 <div>
                     <label class="block text-xs text-gray-400 mb-1">Número de Operación</label>
-                    <input type="text" name="operation_code" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" name="operation_code" placeholder="Ej: 12345678" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
                 </div>
-                <div class="text-center text-xs text-gray-500">O</div>
+                <div class="text-center text-xs text-gray-500 relative">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
+                    <span class="relative bg-[#11131e] px-2">O</span>
+                </div>
                 <div>
                     <label class="block text-xs text-gray-400 mb-1">Captura de Pantalla</label>
-                    <input type="file" name="voucher_file" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:bg-white/10 file:text-white cursor-pointer">
+                    <input type="file" name="voucher_file" accept="image/*" class="w-full text-sm text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-white/10 file:text-white cursor-pointer border border-white/5 bg-white/5 rounded-lg p-1">
                 </div>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl mt-4 transition">Enviar Validación</button>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl mt-4 transition shadow-lg text-sm">Enviar Validación</button>
             </form>
         </div>
     </div>
@@ -150,86 +156,118 @@
         let fodaText = '';
         let premiumText = '';
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Procesando...';
-            resultsContainer.classList.remove('hidden');
-            fodaContent.innerHTML = '';
-            premiumContent.innerHTML = '';
-            paywallOverlay.classList.add('hidden');
-            premiumContent.parentElement.classList.remove('blur-paywall');
-            fodaText = ''; premiumText = '';
+        if(form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Procesando...';
+                submitBtn.classList.add('opacity-75');
+                resultsContainer.classList.remove('hidden');
+                
+                // Scroll suave a los resultados
+                setTimeout(() => {
+                    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
 
-            try {
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    body: formData
-                });
+                fodaContent.innerHTML = '<div class="animate-pulse flex space-x-4"><div class="flex-1 space-y-4 py-1"><div class="h-2 bg-gray-600 rounded"></div><div class="space-y-3"><div class="grid grid-cols-3 gap-4"><div class="h-2 bg-gray-600 rounded col-span-2"></div><div class="h-2 bg-gray-600 rounded col-span-1"></div></div><div class="h-2 bg-gray-600 rounded"></div></div></div></div>';
+                premiumContent.innerHTML = '<p class="text-gray-500 italic flex items-center gap-2"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i> Generando contenido de alta conversión...</p>';
+                
+                paywallOverlay.classList.add('hidden');
+                premiumContent.parentElement.classList.remove('blur-paywall');
+                fodaText = ''; premiumText = '';
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
+                try {
+                    const response = await fetch('/api/generate', {
+                        method: 'POST',
+                        body: formData
+                    });
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n\n');
-                    buffer = lines.pop(); // Guardar el fragmento incompleto
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
 
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = JSON.parse(line.substring(6));
-                            
-                            if (data.type === 'foda') {
-                                fodaText += data.text;
-                                fodaContent.innerHTML = marked.parse(fodaText);
-                            } 
-                            else if (data.type === 'premium') {
-                                premiumText += data.text;
-                                premiumContent.innerHTML = marked.parse(premiumText);
-                            }
-                            else if (data.type === 'paywall_active') {
-                                // Servidor bloqueó la generación
-                                premiumContent.parentElement.classList.add('blur-paywall');
-                                paywallOverlay.classList.remove('hidden');
-                            }
-                            else if (data.type === 'credit_update') {
-                                document.getElementById('credit-count').innerText = data.credits;
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n\n');
+                        buffer = lines.pop(); // Guardar el fragmento incompleto
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const data = JSON.parse(line.substring(6));
+                                
+                                if (data.type === 'foda') {
+                                    if(fodaText === '') fodaContent.innerHTML = ''; // Limpiar loader
+                                    fodaText += data.text;
+                                    fodaContent.innerHTML = marked.parse(fodaText);
+                                } 
+                                else if (data.type === 'premium') {
+                                    if(premiumText === '') premiumContent.innerHTML = ''; // Limpiar loader
+                                    premiumText += data.text;
+                                    premiumContent.innerHTML = marked.parse(premiumText);
+                                }
+                                else if (data.type === 'paywall_active') {
+                                    premiumContent.parentElement.classList.add('blur-paywall');
+                                    paywallOverlay.classList.remove('hidden');
+                                }
+                                else if (data.type === 'credit_update') {
+                                    document.getElementById('credit-count').innerText = data.credits;
+                                }
                             }
                         }
                     }
+                } catch (error) {
+                    console.error("Error SSE:", error);
+                    fodaContent.innerHTML = '<p class="text-red-400">Ocurrió un error al conectar con el servidor.</p>';
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia';
+                    submitBtn.classList.remove('opacity-75');
                 }
-            } catch (error) {
-                console.error("Error SSE:", error);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Estrategia';
-            }
-        });
+            });
+        }
 
         // Modal Logic
         const modal = document.getElementById('payment-modal');
-        function openModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); }
-        function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        function openModal() { 
+            modal.classList.remove('hidden'); 
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden'; // Prevenir scroll de fondo
+        }
+        function closeModal() { 
+            modal.classList.add('hidden'); 
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
 
-        document.getElementById('payment-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            btn.innerHTML = 'Enviando...';
-            
-            const formData = new FormData(e.target);
-            await fetch('/api/checkout', { method: 'POST', body: formData });
-            
-            alert('Enviado. Un administrador validará tu pago pronto.');
-            closeModal();
-            e.target.reset();
-            btn.innerHTML = 'Enviar Validación';
-        });
+        const paymentForm = document.getElementById('payment-form');
+        if(paymentForm) {
+            paymentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = e.target.querySelector('button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
+                btn.disabled = true;
+                
+                try {
+                    const formData = new FormData(e.target);
+                    await fetch('/api/checkout', { method: 'POST', body: formData });
+                    
+                    alert('✅ Tu comprobante ha sido enviado. Un administrador validará tu pago en breve.');
+                    closeModal();
+                    e.target.reset();
+                } catch (error) {
+                    alert('❌ Error al enviar el comprobante. Inténtalo de nuevo.');
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            });
+        }
     </script>
 </body>
 </html>
