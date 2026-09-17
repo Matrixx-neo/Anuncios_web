@@ -3,37 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - AdVance AI</title>
+    <title>Admin Panel - AdVance AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-slate-950 text-slate-200 p-6">
-    <div class="max-w-3xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-xl font-bold">Vouchers Pendientes</h1>
-            <a href="/" class="text-indigo-400">Volver</a>
+<body class="bg-slate-950 text-slate-200 p-6 min-h-screen">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <h1 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-shield-halved text-indigo-500"></i> Panel de Control (Modo Dios)</h1>
+            <a href="/" class="text-sm font-bold text-indigo-400 hover:text-white transition"><i class="fa-solid fa-arrow-left mr-1"></i> Volver a la App</a>
         </div>
+        
+        <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4"><i class="fa-solid fa-file-invoice-dollar mr-1"></i> Vouchers Pendientes de Aprobación</h2>
         <div class="space-y-4">
             {% for tx in txs %}
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex justify-between items-center" id="tx-{{ tx.id }}">
-                <div>
-                    <p class="font-bold">{{ tx.user_email }}</p>
-                    <p class="text-xs text-slate-500">{{ tx.created_at }}</p>
+            <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4" id="tx-{{ tx.id }}">
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <div class="w-10 h-10 bg-indigo-950 rounded-full flex items-center justify-center text-indigo-400 border border-indigo-800">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-white text-sm">{{ tx.user_email }}</p>
+                        <p class="text-[10px] text-slate-500 font-mono">{{ tx.created_at }}</p>
+                    </div>
                 </div>
-                <div class="flex gap-3">
-                    <a href="{{ tx.receipt_path }}" target="_blank" class="bg-slate-800 px-3 py-1.5 rounded text-sm">Ver Voucher</a>
-                    <button onclick="approve({{ tx.id }})" class="bg-emerald-600 text-white px-3 py-1.5 rounded text-sm font-bold">Aprobar (+5 Cr)</button>
+                
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <a href="{{ tx.receipt_path }}" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-700">
+                        <i class="fa-solid fa-image text-slate-400"></i> Ver Voucher
+                    </a>
+                    <button onclick="approve({{ tx.id }}, 1)" class="bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition border border-slate-700 hover:border-emerald-500">
+                        Starter (+1)
+                    </button>
+                    <button onclick="approve({{ tx.id }}, 5)" class="bg-indigo-900/50 hover:bg-indigo-600 text-indigo-300 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition border border-indigo-700">
+                        Emprendedor (+5)
+                    </button>
+                    <button onclick="approve({{ tx.id }}, 15)" class="bg-amber-900/30 hover:bg-amber-600 text-amber-500 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition border border-amber-700/50 hover:border-amber-500">
+                        PRO (+15)
+                    </button>
                 </div>
             </div>
             {% endfor %}
+            
             {% if not txs %}
-            <p class="text-slate-500">No hay pagos pendientes.</p>
+            <div class="text-center p-10 bg-slate-900/30 rounded-3xl border border-slate-800 border-dashed">
+                <i class="fa-solid fa-check-circle text-4xl text-slate-700 mb-3"></i>
+                <p class="text-slate-500 font-bold">Todo al día. No hay pagos pendientes.</p>
+            </div>
             {% endif %}
         </div>
     </div>
     <script>
-        async function approve(id) {
-            await fetch(`/api/approve/${id}`, {method: 'POST'});
-            document.getElementById(`tx-${id}`).remove();
+        async function approve(id, credits) {
+            if(!confirm(`¿Aprobar y recargar ${credits} créditos a este usuario?`)) return;
+            const formData = new FormData();
+            formData.append('credits', credits);
+            const res = await fetch(`/api/approve/${id}`, {method: 'POST', body: formData});
+            if(res.ok) {
+                document.getElementById(`tx-${id}`).remove();
+                alert(`¡${credits} Créditos asignados con éxito!`);
+            }
         }
     </script>
 </body>

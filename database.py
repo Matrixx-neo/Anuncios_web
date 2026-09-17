@@ -27,6 +27,7 @@ def create_or_update_user(email: str, name: str, default_role: str):
     with get_db() as db:
         user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         if not user:
+            # 1 crédito gratis de bienvenida
             db.execute("INSERT INTO users (email, name, role, credits) VALUES (?, ?, ?, ?)", (email, name, default_role, 1))
             db.commit()
             return {"email": email, "name": name, "role": default_role, "credits": 1}
@@ -54,11 +55,11 @@ def get_pending_transactions():
     with get_db() as db:
         return [dict(row) for row in db.execute("SELECT * FROM transactions WHERE status = 'PENDIENTE' ORDER BY created_at DESC")]
 
-def approve_transaction(tx_id: int):
+def approve_transaction(tx_id: int, credits_to_add: int):
     with get_db() as db:
         tx = db.execute("SELECT * FROM transactions WHERE id = ?", (tx_id,)).fetchone()
         if tx and tx['status'] == 'PENDIENTE':
-            db.execute("UPDATE users SET credits = credits + 5 WHERE email = ?", (tx['user_email'],))
+            db.execute("UPDATE users SET credits = credits + ? WHERE email = ?", (credits_to_add, tx['user_email']))
             db.execute("UPDATE transactions SET status = 'APROBADA' WHERE id = ?", (tx_id,))
             db.commit()
             return True
