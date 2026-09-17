@@ -61,19 +61,20 @@ def get_current_user(request: Request):
 async def read_root(request: Request):
     user = get_current_user(request)
     is_admin = user['email'] in ADMIN_EMAILS if user else False
-    # Bug Fix: Usar request=request explícitamente y context como dict
     return templates.TemplateResponse(
         request=request, 
         name="index.html", 
         context={"user": user, "is_admin": is_admin}
     )
 
-@app.route('/login')
+# --- RUTAS OAUTH CORRECTAS DE FASTAPI ---
+
+@app.get('/auth/login')
 async def login(request: Request):
     redirect_uri = f"{BASE_URL}/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
-@app.route('/auth/callback')
+@app.get('/auth/callback')
 async def auth_callback(request: Request):
     try:
         token = await oauth.google.authorize_access_token(request)
@@ -85,10 +86,19 @@ async def auth_callback(request: Request):
         print(f"OAuth Error: {str(e)}")
     return RedirectResponse(url='/')
 
-@app.route('/logout')
+@app.get('/auth/logout')
 async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url='/')
+
+# Redirecciones de seguridad por si index.html aún apunta a /login o /logout
+@app.get('/login')
+async def login_redirect():
+    return RedirectResponse(url='/auth/login')
+
+@app.get('/logout')
+async def logout_redirect():
+    return RedirectResponse(url='/auth/logout')
 
 # --- ENDPOINTS CORE ---
 
