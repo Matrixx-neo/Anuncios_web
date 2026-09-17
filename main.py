@@ -70,7 +70,7 @@ async def read_root(request: Request):
 @app.get('/auth/login')
 async def login(request: Request):
     # Forzar redirección con la URL segura validada
-    redirect_uri = f"{BASE_URL}/auth/callback"
+    redirect_uri = "https://anuncios-web-c4bv.onrender.com/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @app.get('/auth/callback')
