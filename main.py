@@ -8,7 +8,6 @@ from typing import List, Optional
 from io import BytesIO
 from PIL import Image
 
-# Para web scraping de las URLs de competidores
 import httpx 
 
 from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, HTTPException
@@ -31,14 +30,12 @@ SESSION_SECRET = os.getenv("SESSION_SECRET", "super-secret-session-key")
 
 app = FastAPI()
 
-# Middlewares Anti-Proxy (Render) y Sesiones Seguras
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, https_only=True, same_site="lax")
 
 templates = Jinja2Templates(directory="templates")
 database.init_db()
 
-# Configuración OAuth
 oauth = OAuth()
 oauth.register(
     name='google',
@@ -50,12 +47,10 @@ oauth.register(
 
 def get_current_user(request: Request):
     user_info = request.session.get('user')
-    if not user_info:
-        return None
+    if not user_info: return None
     email = user_info.get('email')
     db_user = database.get_user(email)
-    if not db_user:
-        db_user = database.create_user(email)
+    if not db_user: db_user = database.create_user(email)
     return dict(db_user)
 
 @app.get("/", response_class=HTMLResponse)
@@ -63,14 +58,12 @@ async def read_root(request: Request):
     user = get_current_user(request)
     is_admin = user['email'] in ADMIN_EMAILS if user else False
     return templates.TemplateResponse(
-        request=request, 
-        name="index.html", 
-        context={"user": user, "is_admin": is_admin}
+        request=request, name="index.html", context={"user": user, "is_admin": is_admin}
     )
 
 @app.get('/auth/login')
 async def login(request: Request):
-    # REDIRECT_URI ESTRICTAMENTE MANTENIDO PARA GOOGLE OAUTH
+    # OAUTH EXACTO: No tocar
     redirect_uri = "https://anuncios-web-c4bv.onrender.com/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -82,8 +75,7 @@ async def auth_callback(request: Request):
         if user:
             request.session['user'] = user
             database.create_user(user['email'])
-    except Exception as e:
-        print(f"OAuth Error: {str(e)}")
+    except Exception as e: print(f"OAuth Error: {str(e)}")
     return RedirectResponse(url='/')
 
 @app.get('/auth/logout')
@@ -97,32 +89,30 @@ async def login_redirect(): return RedirectResponse(url='/auth/login')
 @app.get('/logout')
 async def logout_redirect(): return RedirectResponse(url='/auth/logout')
 
-# --- FUNCIONES CORE: SCRAPING & IA ---
+# --- EXTRACCIÓN Y PIPELINE IA ---
 
 async def fetch_url_text(url: str) -> str:
-    """Extrae texto limpio de una URL usando regex para evitar dependencias pesadas si no están instaladas."""
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(url, follow_redirects=True)
             resp.raise_for_status()
             text = re.sub(r'<style.*?>.*?</style>', ' ', resp.text, flags=re.DOTALL | re.IGNORECASE)
             text = re.sub(r'<script.*?>.*?</script>', ' ', text, flags=re.DOTALL | re.IGNORECASE)
             text = re.sub(r'<[^>]+>', ' ', text)
-            text = re.sub(r'\s+', ' ', text).strip()
-            return text[:2500]
-    except Exception as e:
-        return f"[Error extrayendo {url}: {str(e)}]"
+            return re.sub(r'\s+', ' ', text).strip()[:1500]
+    except:
+        return ""
 
 @app.post("/api/generate")
 async def generate_content(
     request: Request,
     input_text: str = Form(...),
     competitor_text: str = Form(...),
+    focus_text: str = Form(""),
     files: List[UploadFile] = File(None)
 ):
     user = get_current_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="No autorizado")
+    if not user: raise HTTPException(status_code=401, detail="No autorizado")
 
     email = user['email']
     is_admin = email in ADMIN_EMAILS
@@ -133,20 +123,19 @@ async def generate_content(
         for file in files:
             if file.filename and file.content_type.startswith("image/"):
                 contents = await file.read()
-                img = Image.open(BytesIO(contents))
-                pil_images.append(img)
+                pil_images.append(Image.open(BytesIO(contents)))
 
     async def sse_generator():
-        # Setup GenAI con Rotación de Keys
+        # Configuración IA con Rotación
         api_keys = [k.strip() for k in os.getenv("GEMINI_API_KEYS", "").split(",") if k.strip()]
         active_key = random.choice(api_keys) if api_keys else os.getenv("GEMINI_API_KEY", "")
         genai.configure(api_key=active_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Forzar JSON response_mime_type en Gemini 1.5
+        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
 
-        yield f"data: {json.dumps({'type': 'log', 'text': 'Iniciando pipeline estratégico...'})}\n\n"
-        await asyncio.sleep(0.1)
+        yield f"data: {json.dumps({'type': 'log', 'text': 'Analizando parámetros de entrada...'})}\n\n"
+        await asyncio.sleep(0.5)
 
-        # 1. Scraping Concurrente si se detectan URLs
         url_pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
         my_urls = url_pattern.findall(input_text)
         comp_urls = url_pattern.findall(competitor_text)
@@ -154,83 +143,87 @@ async def generate_content(
         my_context, comp_context = input_text, competitor_text
 
         if my_urls or comp_urls:
-            yield f"data: {json.dumps({'type': 'log', 'text': 'Extrayendo datos de URLs en tiempo real...'})}\n\n"
+            yield f"data: {json.dumps({'type': 'log', 'text': 'Extrayendo competidor y escaneando URLs (timeout 3s)...'})}\n\n"
             tasks = []
-            if my_urls: tasks.append(fetch_url_text(my_urls[0]))
-            else: tasks.append(asyncio.sleep(0)) # dummy task para mantener orden
-            
-            if comp_urls: tasks.append(fetch_url_text(comp_urls[0]))
-            else: tasks.append(asyncio.sleep(0))
-
+            tasks.append(fetch_url_text(my_urls[0]) if my_urls else asyncio.sleep(0))
+            tasks.append(fetch_url_text(comp_urls[0]) if comp_urls else asyncio.sleep(0))
             results = await asyncio.gather(*tasks)
-            if my_urls and results[0]: my_context += f"\n[Contenido web escaneado: {results[0]}]"
-            if comp_urls and results[1]: comp_context += f"\n[Contenido web escaneado: {results[1]}]"
+            if my_urls and results[0]: my_context += f" | Web: {results[0]}"
+            if comp_urls and results[1]: comp_context += f" | Web: {results[1]}"
 
-        yield f"data: {json.dumps({'type': 'log', 'text': 'Sintetizando Matriz FODA y comparativa de mercado...'})}\n\n"
+        yield f"data: {json.dumps({'type': 'log', 'text': 'Estructurando matriz FODA y estrategia JSON...'})}\n\n"
 
-        # TIEMPO 1: Análisis FODA (Gratis)
-        prompt_foda = f"""Analiza detalladamente mi negocio: '{my_context}' frente al competidor: '{comp_context}'.
-        Devuelve el análisis en este orden y con encabezados Markdown limpios (##):
-        ## Diagnóstico Comparativo
-        (Resumen de la situación en 1 párrafo)
-        ## Puntos Fuertes y Débiles
-        (Lista de ventajas y desventajas directas)
-        ## Matriz FODA
-        (Desglose claro con viñetas: Fortalezas, Oportunidades, Debilidades, Amenazas)."""
-        
-        contents_foda = pil_images + [prompt_foda] if pil_images else [prompt_foda]
-        
+        prompt = f"""
+        Actúa como Estratega de Marketing Senior. 
+        Analiza Mi Negocio: '{my_context}'. 
+        Competidor: '{comp_context}'.
+        Enfoque/Ángulo: '{focus_text}'.
+
+        Debes devolver ÚNICAMENTE un objeto JSON con esta estructura exacta:
+        {{
+            "campaign_name": "Nombre creativo de la campaña",
+            "score": <número 1-100>,
+            "metrics": {{
+                "engagement": {{"me": <1-10>, "rival": <1-10>}},
+                "visual": {{"me": <1-10>, "rival": <1-10>}},
+                "frequency": {{"me": <1-10>, "rival": <1-10>}}
+            }},
+            "attack_opportunities": [
+                {{"weakness": "Debilidad 1 del rival", "tactic": "Estrategia de ataque 1"}},
+                {{"weakness": "Debilidad 2 del rival", "tactic": "Estrategia de ataque 2"}}
+            ],
+            "content_plan": {{
+                "monday": "Gancho y tema corto para Lunes",
+                "wednesday": "Tema de valor profundo para Miércoles",
+                "friday": "Oferta o CTA de venta para Viernes"
+            }},
+            "recommendations": ["Recomendación 1", "Recomendación 2", "Recomendación 3"],
+            "hashtags": "#hashtag1 #hashtag2 #hashtag3"
+        }}
+        """
+        contents = pil_images + [prompt] if pil_images else [prompt]
+
+        # TIEMPO 1: Generación y Emisión de Estrategia JSON
         try:
-            response_foda = model.generate_content(contents_foda, stream=True)
-            for chunk in response_foda:
-                yield f"data: {json.dumps({'type': 'foda', 'text': chunk.text})}\n\n"
-                await asyncio.sleep(0.01)
+            response = await model.generate_content_async(contents)
+            raw_text = response.text.strip()
+            # Limpiar posible formato markdown residual
+            if raw_text.startswith("```json"): raw_text = raw_text[7:-3]
+            strategy_data = json.loads(raw_text)
+            yield f"data: {json.dumps({'type': 'strategy', 'data': strategy_data})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'type': 'log', 'text': f'Aviso IA (Rotando llave en próximo intento): {str(e)}'})}\n\n"
+            yield f"data: {json.dumps({'type': 'log', 'text': f'Error de IA: {str(e)}'})}\n\n"
+            return
 
         # PAYWALL CHECK SERVIDOR
         if not is_admin and credits <= 0:
-            yield f"data: {json.dumps({'type': 'log', 'text': 'Análisis parcial completado. Requiere recarga.'})}\n\n"
-            yield f"data: {json.dumps({'type': 'paywall_active'})}\n\n"
+            yield f"data: {json.dumps({'type': 'log', 'text': 'Requiere créditos para Sección PRO...'})}\n\n"
+            yield f"data: {json.dumps({'type': 'paywall'})}\n\n"
             return 
 
-        # Descuento de crédito
+        # Descontar crédito si es usuario regular
         if not is_admin:
             database.update_credits(email, credits - 1)
             yield f"data: {json.dumps({'type': 'credit_update', 'credits': credits - 1})}\n\n"
 
-        yield f"data: {json.dumps({'type': 'log', 'text': 'Estructurando Copy AIDA y proyecciones financieras...'})}\n\n"
-
-        # TIEMPO 2: Premium Text & Images
-        prompt_premium = f"""Para '{input_text}':
-        Genera un Copy publicitario letal utilizando la metodología AIDA (Atención, Interés, Deseo, Acción) para vencer a '{competitor_text}'.
-        Incluye luego un apartado 'Métricas Estimadas' (CTR %, CPC, y ROI proyectado). Formato Markdown."""
-        contents_premium = pil_images + [prompt_premium] if pil_images else [prompt_premium]
-        
-        try:
-            response_premium = model.generate_content(contents_premium, stream=True)
-            for chunk in response_premium:
-                yield f"data: {json.dumps({'type': 'premium_text', 'text': chunk.text})}\n\n"
-                await asyncio.sleep(0.01)
-        except Exception as e:
-            yield f"data: {json.dumps({'type': 'log', 'text': 'Error en fase premium.'})}\n\n"
-            
         yield f"data: {json.dumps({'type': 'log', 'text': 'Renderizando Carrusel HD vía GPU...'})}\n\n"
 
-        # Generador HD Pollinations (1080x1080 Cuadrado)
-        clean_name = my_context[:60].replace('\n', ' ')
-        p1 = urllib.parse.quote(f"Professional cinematic product advertising photography for {clean_name}, hyperrealistic, 8k, studio lighting, highly detailed")
-        p2 = urllib.parse.quote(f"Modern neon aesthetic social media banner background for {clean_name}, dark mode style, glowing cyan and purple accents, 4k")
-        images = [
-            f"https://pollinations.ai/p/{p1}?width=1080&height=1080&nologo=true",
-            f"https://pollinations.ai/p/{p2}?width=1080&height=1080&nologo=true"
+        # TIEMPO 2: Carrusel Publicitario HD (4 Placas)
+        clean_name = my_context[:50].replace('\n', ' ')
+        p_base = f"hyperrealistic cinematic product advertising photography for {clean_name}, modern neon lighting, highly detailed, 8k"
+        
+        urls = [
+            f"[https://pollinations.ai/p/](https://pollinations.ai/p/){urllib.parse.quote(p_base + ' vibrant hook slide')}?width=1080&height=1080&nologo=true&seed={random.randint(1,9999)}",
+            f"[https://pollinations.ai/p/](https://pollinations.ai/p/){urllib.parse.quote(p_base + ' showing value proposition, clean background')}?width=1080&height=1080&nologo=true&seed={random.randint(1,9999)}",
+            f"[https://pollinations.ai/p/](https://pollinations.ai/p/){urllib.parse.quote(p_base + ' comparing against competitor, split contrast')}?width=1080&height=1080&nologo=true&seed={random.randint(1,9999)}",
+            f"[https://pollinations.ai/p/](https://pollinations.ai/p/){urllib.parse.quote(p_base + ' final call to action, premium dark mode UI')}?width=1080&height=1080&nologo=true&seed={random.randint(1,9999)}"
         ]
         
-        yield f"data: {json.dumps({'type': 'images', 'urls': images})}\n\n"
-        yield f"data: {json.dumps({'type': 'log', 'text': 'Proceso 100% Completado.'})}\n\n"
+        yield f"data: {json.dumps({'type': 'carousel', 'urls': urls})}\n\n"
+        yield f"data: {json.dumps({'type': 'log', 'text': 'Proceso completado.'})}\n\n"
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
-    # Headers obligatorios para bypass del buffering en Nginx/Render
+    # Anti-Buffering Headers requeridos por Render
     return StreamingResponse(sse_generator(), media_type="text/event-stream", headers={
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
@@ -239,21 +232,15 @@ async def generate_content(
 
 @app.post("/api/checkout")
 async def process_checkout(
-    request: Request,
-    operation_code: str = Form(None),
-    voucher_file: UploadFile = File(None)
+    request: Request, operation_code: str = Form(None), voucher_file: UploadFile = File(None)
 ):
     user = get_current_user(request)
-    if not user: raise HTTPException(status_code=401, detail="No autorizado")
-
+    if not user: raise HTTPException(status_code=401)
     voucher_b64 = None
     if voucher_file and voucher_file.filename:
         import base64
         contents = await voucher_file.read()
         voucher_b64 = base64.b64encode(contents).decode('utf-8')
-
-    database.create_transaction(
-        email=user['email'], amount=15.00,
-        operation_code=operation_code, voucher_b64=voucher_b64
-    )
+    database.create_transaction(email=user['email'], amount=15.00, operation_code=operation_code, voucher_b64=voucher_b64)
     return {"status": "success"}
+
