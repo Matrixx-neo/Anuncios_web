@@ -1,50 +1,52 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AdGenius — Panel Admin</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  body { background: #09090f; }
-  .glass { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(16px); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - AdVance AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen text-slate-100 font-sans antialiased">
-<div class="max-w-4xl mx-auto px-6 py-10">
-  <div class="flex items-center justify-between mb-8">
-    <h1 class="text-2xl font-bold">🛠️ Panel Administrador — Recargas pendientes</h1>
-    <a href="/" class="text-sm text-indigo-400 hover:underline">← Volver a la app</a>
-  </div>
-
-  {% if pendientes|length == 0 %}
-  <div class="glass rounded-2xl p-8 text-center text-slate-400">No hay recargas pendientes por revisar. ✅</div>
-  {% endif %}
-
-  <div class="space-y-4">
-    {% for r in pendientes %}
-    <div class="glass rounded-2xl p-5 flex flex-col sm:flex-row gap-5">
-      <a href="/admin/comprobante/{{ r.id }}" target="_blank" class="shrink-0">
-        <img src="/admin/comprobante/{{ r.id }}" alt="Comprobante" class="w-32 h-32 object-cover rounded-xl border border-white/10">
-      </a>
-      <div class="flex-1">
-        <p class="font-semibold">{{ r.name or r.email }}</p>
-        <p class="text-xs text-slate-400 mb-2">{{ r.email }}</p>
-        <p class="text-sm">Monto: <span class="text-indigo-400 font-medium">{{ r.monto }}</span> · Método: <span class="font-medium">{{ r.metodo }}</span> · Créditos a acreditar: <span class="font-medium">{{ r.creditos }}</span></p>
-        <div class="flex gap-3 mt-4">
-          <form method="post" action="/admin/recargas/{{ r.id }}/resolver">
-            <input type="hidden" name="accion" value="aprobar">
-            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 transition text-white text-sm font-semibold rounded-lg px-4 py-2">✓ Aprobar y acreditar</button>
-          </form>
-          <form method="post" action="/admin/recargas/{{ r.id }}/resolver">
-            <input type="hidden" name="accion" value="rechazar">
-            <button type="submit" class="bg-red-600/80 hover:bg-red-500 transition text-white text-sm font-semibold rounded-lg px-4 py-2">✕ Rechazar</button>
-          </form>
+<body class="bg-slate-950 text-slate-200 p-8">
+    <div class="max-w-4xl mx-auto space-y-6">
+        <div class="flex justify-between items-center bg-slate-900 p-6 rounded-2xl border border-slate-800">
+            <h1 class="text-2xl font-bold text-white">Panel Administrador</h1>
+            <a href="/" class="text-indigo-400 hover:text-indigo-300">Volver a la App</a>
         </div>
-      </div>
+
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+            <h2 class="text-lg font-bold text-white mb-4">Recargas Pendientes</h2>
+            {% if txs|length == 0 %}
+                <p class="text-slate-500 text-sm">No hay recargas pendientes.</p>
+            {% else %}
+                <div class="space-y-4">
+                    {% for tx in txs %}
+                    <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700" id="tx-{{ tx.id }}">
+                        <div>
+                            <p class="font-bold text-white">{{ tx.user_email }}</p>
+                            <p class="text-sm text-slate-400">{{ tx.method }} - S/ {{ tx.amount }}</p>
+                            <p class="text-xs text-slate-500">{{ tx.created_at }}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <a href="{{ tx.receipt_path }}" target="_blank" class="text-sm text-indigo-400 hover:underline">Ver Voucher</a>
+                            <button onclick="approve({{ tx.id }})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold">Aprobar</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
     </div>
-    {% endfor %}
-  </div>
-</div>
+
+    <script>
+        async function approve(id) {
+            if(!confirm("¿Aprobar esta recarga y sumar créditos al usuario?")) return;
+            const res = await fetch(`/api/approve_tx/${id}`, { method: 'POST' });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById(`tx-${id}`).remove();
+                alert("Créditos aprobados correctamente.");
+            }
+        }
+    </script>
 </body>
 </html>

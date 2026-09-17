@@ -1,633 +1,204 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AdGenius — Dashboard de publicidad e inteligencia competitiva</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Plus Jakarta Sans', 'sans-serif'] },
-        colors: { base: '#09090f', panel: '#12121c', indigo: '#6366f1', violet: '#8b5cf6' },
-        boxShadow: { glow: '0 0 40px -8px rgba(99,102,241,0.5)', glowSoft: '0 0 24px -6px rgba(139,92,246,0.35)' },
-      },
-    },
-  };
-</script>
-<style>
-  body { background: radial-gradient(1200px 600px at 10% -10%, rgba(99,102,241,0.16), transparent),
-                      radial-gradient(900px 500px at 100% 0%, rgba(139,92,246,0.12), transparent), #09090f; }
-  .glass { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(16px); }
-  .input-glow:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.15); }
-  .btn-press:active { transform: scale(0.98); }
-  ::-webkit-scrollbar { height: 8px; width: 8px; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
-  @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
-  .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.1) 37%, rgba(255,255,255,0.04) 63%); background-size: 800px 100%; animation: shimmer 1.6s linear infinite; }
-  @keyframes barGlow { 0% { background-position: 0 0; } 100% { background-position: 40px 0; } }
-  .bar-glow { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 10px, transparent 10px 20px); animation: barGlow 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner { animation: spin 0.8s linear infinite; }
-  @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(99,102,241,0.45); } 100% { box-shadow: 0 0 0 9px rgba(99,102,241,0); } }
-  .step-active { animation: pulseRing 1.3s ease-out infinite; }
-  .fade-in { animation: fadeIn .45s ease both; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .tab-btn { border-bottom: 2px solid transparent; }
-  .tab-btn.activo { border-color: #6366f1; color: #fff; text-shadow: 0 0 18px rgba(99,102,241,0.6); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdVance AI - Dashboard de Publicidad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #08090d; color: #f1f5f9; }
+        .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.07); }
+        .paywall-blur { filter: blur(8px); pointer-events: none; user-select: none; }
+        .paywall-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; items-center; z-index: 10; background: rgba(8, 9, 13, 0.5); }
+    </style>
 </head>
-<body class="min-h-screen text-slate-100 font-sans antialiased">
+<body class="min-h-screen flex flex-col">
 
-<div class="max-w-6xl xl:max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-10">
+    <nav class="border-b border-slate-800 bg-slate-950/70 backdrop-blur px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-gradient-to-tr from-indigo-600 to-pink-500 rounded-xl flex items-center justify-center font-black text-white">A</div>
+            <span class="text-xl font-bold text-white">AdVance <span class="text-indigo-400">AI</span></span>
+        </div>
+        <div>
+            {% if user %}
+                <div class="flex items-center gap-4">
+                    {% if user.role == 'admin' %}
+                        <span class="text-xs bg-indigo-900 text-indigo-300 px-3 py-1 rounded-full border border-indigo-700">Modo Dios (Ilimitado)</span>
+                        <a href="/admin" class="text-xs text-slate-300 hover:text-white"><i class="fa-solid fa-gauge"></i> Admin</a>
+                    {% else %}
+                        <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-700">Créditos: <strong class="text-white">{{ user.credits }}</strong></span>
+                    {% endif %}
+                    <a href="/auth/logout" class="text-xs text-red-400 hover:text-red-300"><i class="fa-solid fa-right-from-bracket"></i> Salir</a>
+                </div>
+            {% else %}
+                <a href="/auth/login" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 px-4 py-2 rounded-xl font-medium flex items-center gap-2">
+                    <i class="fa-brands fa-google text-indigo-400"></i> Iniciar sesión
+                </a>
+            {% endif %}
+        </div>
+    </nav>
 
-  <header class="flex items-center justify-between mb-14 flex-wrap gap-4">
-    <div class="flex items-center gap-2.5">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-violet shadow-glow"></div>
-      <span class="text-lg font-bold tracking-tight font-display">AdGenius</span>
-      <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo bg-indigo/10 border border-indigo/30 rounded-full px-2 py-0.5 ml-1">Pro</span>
-    </div>
-    <div id="zona-usuario" class="flex items-center gap-2.5 text-sm"></div>
-  </header>
+    <main class="max-w-5xl mx-auto px-4 py-8 w-full grid md:grid-cols-12 gap-8">
+        
+        <div class="md:col-span-5 space-y-6">
+            <form id="adsForm" class="glass-card p-6 rounded-2xl space-y-5">
+                <h2 class="text-lg font-bold text-white mb-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> Nuevo Análisis</h2>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Tu negocio o producto</label>
+                    <textarea name="business_input" id="business_input" rows="4" required placeholder="URL o descripción en texto libre..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:border-indigo-500 outline-none"></textarea>
+                </div>
 
-  <section class="grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center mb-16">
-    <div>
-      <h1 class="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight font-display">
-        Convierte cualquier URL en un
-        <span class="bg-gradient-to-r from-indigo to-violet bg-clip-text text-transparent">dashboard de ataque</span>
-        publicitario
-      </h1>
-      <p class="mt-5 text-slate-400 text-lg max-w-lg">
-        Diagnóstico y FODA gratis. Dashboard completo, módulo Google Ads y carrusel HD de 5 placas
-        al desbloquear tu análisis.
-      </p>
-    </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Fotos del producto (Opcional)</label>
+                    <input type="file" name="product_photos" multiple accept="image/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-slate-800 file:text-indigo-400">
+                </div>
 
-    <form id="form-analizar" class="glass rounded-2xl p-6 shadow-glow">
-      <label class="block text-sm text-slate-300 mb-1.5" for="business_url">Tu negocio o producto</label>
-      <input id="business_url" type="text" required placeholder="https://tunegocio.com o instagram.com/tumarca"
-        class="input-glow w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm placeholder:text-slate-500 mb-4 transition">
-      <label class="block text-sm text-slate-300 mb-1.5" for="competitor_url">Competidor directo</label>
-      <input id="competitor_url" type="text" required placeholder="https://competidor.com o @competidor"
-        class="input-glow w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm placeholder:text-slate-500 mb-6 transition">
-      <button id="btn-analizar" type="submit"
-        class="btn-press w-full rounded-xl bg-gradient-to-r from-indigo to-violet py-3.5 font-semibold text-white shadow-glow hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-        <span id="btn-texto">Analizar Competencia y Generar Publicidad</span>
-      </button>
-      <p id="form-error" class="hidden mt-3 text-sm text-red-400"></p>
-    </form>
-  </section>
+                <button type="submit" class="w-full py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-500 transition">Generar Estrategia</button>
+            </form>
+        </div>
 
-  <section id="progreso" class="hidden glass rounded-2xl p-6 mb-10 fade-in">
-    <div class="flex items-center gap-3 mb-4">
-      <svg class="spinner w-4 h-4 text-indigo" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/>
-        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-      </svg>
-      <span id="mensaje-actual" class="text-sm font-medium text-slate-200">Iniciando...</span>
-    </div>
-    <div class="w-full h-2 rounded-full bg-white/5 overflow-hidden mb-5">
-      <div id="barra-progreso" class="h-full rounded-full bg-gradient-to-r from-indigo to-violet bar-glow transition-all duration-500" style="width: 4%"></div>
-    </div>
-    <div class="flex flex-wrap gap-y-3 gap-x-6 text-xs" id="pasos"></div>
-  </section>
-
-  <nav id="tabs" class="hidden flex gap-6 border-b border-white/10 mb-8 text-sm font-medium text-slate-400 fade-in">
-    <button data-tab="dashboard" class="tab-btn activo pb-3 px-1 transition">📊 Dashboard Interactivo &amp; Estrategia</button>
-    <button data-tab="carrusel" class="tab-btn pb-3 px-1 transition">🎨 Carrusel de Anuncios HD</button>
-  </nav>
-
-  <!-- TAB: Dashboard -->
-  <section id="tab-dashboard" class="hidden mb-16 fade-in">
-    <div class="glass rounded-2xl p-5 mb-5">
-      <h3 class="text-xs uppercase tracking-wide text-slate-400 mb-1.5">Diagnóstico general</h3>
-      <p id="diagnostico-general" class="text-sm text-slate-200 leading-relaxed"></p>
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-5 mb-5">
-      <div class="glass rounded-2xl p-6">
-        <h3 class="font-semibold text-indigo mb-3 text-sm uppercase tracking-wide">💪 Fortalezas del rival</h3>
-        <ul id="lista-fortalezas-rival" class="space-y-2 text-sm text-slate-300"></ul>
-      </div>
-      <div class="glass rounded-2xl p-6">
-        <h3 class="font-semibold text-violet mb-3 text-sm uppercase tracking-wide">🎯 Puntos débiles a explotar</h3>
-        <ul id="lista-debiles-rival" class="space-y-2 text-sm text-slate-300"></ul>
-      </div>
-    </div>
-
-    <div class="relative">
-      <div id="bloqueable-contenido" class="transition">
-        <div class="grid md:grid-cols-2 gap-5 mb-5">
-          <div class="glass rounded-2xl p-6 flex flex-col items-center">
-            <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-3 self-start">Score de dominancia competitiva</h3>
-            <div class="relative w-48 h-48">
-              <canvas id="chart-score"></canvas>
-              <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <span id="score-numero" class="text-3xl font-bold font-display">--%</span>
-                <span class="text-[10px] text-slate-400 uppercase tracking-wide">vs. competencia</span>
-              </div>
+        <div class="md:col-span-7 space-y-6">
+            <!-- Sección Gratuita -->
+            <div class="glass-card p-6 rounded-2xl hidden" id="fodaSection">
+                <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider"><i class="fa-solid fa-chart-pie text-emerald-400"></i> Análisis FODA (Gratis)</h3>
+                <div id="fodaContent" class="grid grid-cols-2 gap-4 text-xs text-slate-300"></div>
             </div>
-          </div>
-          <div class="glass rounded-2xl p-6">
-            <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-3">Métricas comparativas</h3>
-            <canvas id="chart-comparativo" height="190"></canvas>
-          </div>
-        </div>
 
-        <div class="glass rounded-2xl p-6 mb-5">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300">🎯 Módulo AdGenius / Google Ads</h3>
-            <span class="text-[10px] text-slate-500">Estimaciones de IA, no datos reales de Google Ads</span>
-          </div>
-          <div class="grid sm:grid-cols-3 gap-4 mb-4 text-sm">
-            <div class="glass rounded-xl p-3"><span class="text-slate-400 text-xs">Ad Rank Score</span><p id="ad-rank-score" class="text-xl font-bold font-display">--/100</p></div>
-            <div class="glass rounded-xl p-3 sm:col-span-2 space-y-1" id="metricas-ads"></div>
-          </div>
-          <div class="grid sm:grid-cols-2 gap-4 mb-4">
-            <div><p class="text-xs text-slate-400 mb-1.5">Palabras clave (alta conversión)</p><div id="kw-positivas" class="flex flex-wrap gap-1.5"></div></div>
-            <div><p class="text-xs text-slate-400 mb-1.5">Palabras clave negativas</p><div id="kw-negativas" class="flex flex-wrap gap-1.5"></div></div>
-          </div>
-          <div class="mb-4">
-            <p class="text-xs text-slate-400 mb-2">Copy estructurado — fórmula AIDA</p>
-            <div class="grid sm:grid-cols-2 gap-2 text-xs text-slate-300">
-              <div class="glass rounded-lg p-2.5"><span class="text-indigo font-semibold">Atención:</span> <span id="aida-atencion"></span></div>
-              <div class="glass rounded-lg p-2.5"><span class="text-indigo font-semibold">Interés:</span> <span id="aida-interes"></span></div>
-              <div class="glass rounded-lg p-2.5"><span class="text-indigo font-semibold">Deseo:</span> <span id="aida-deseo"></span></div>
-              <div class="glass rounded-lg p-2.5"><span class="text-indigo font-semibold">Acción:</span> <span id="aida-accion"></span></div>
+            <!-- Sección Premium protegida por Paywall -->
+            <div class="relative hidden" id="premiumSection">
+                <div id="premiumContent" class="glass-card p-6 rounded-2xl space-y-6">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider"><i class="fa-solid fa-crown text-amber-400"></i> Estrategia Premium</h3>
+                    <div id="copyContent" class="bg-slate-900 p-4 rounded-xl text-sm text-slate-300 whitespace-pre-line"></div>
+                    <div id="metricsContent" class="grid grid-cols-3 gap-2 text-center text-xs font-bold text-white"></div>
+                    <div id="carouselContent" class="grid grid-cols-3 gap-3"></div>
+                </div>
+
+                <!-- Capa de Bloqueo -->
+                <div id="paywallOverlay" class="hidden paywall-overlay rounded-2xl items-center text-center p-6 backdrop-blur-sm">
+                    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl max-w-sm w-full shadow-2xl">
+                        <i class="fa-solid fa-lock text-4xl text-amber-400 mb-3"></i>
+                        <h4 class="text-lg font-bold text-white mb-2">Análisis Bloqueado</h4>
+                        <p class="text-xs text-slate-400 mb-4">Para ver tu estrategia completa y carrusel HD necesitas créditos.</p>
+                        <button onclick="document.getElementById('rechargeModal').classList.remove('hidden')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-2 rounded-xl text-sm transition">Recargar Saldo</button>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div>
-            <p class="text-xs text-slate-400 mb-2">3 variaciones de titulares</p>
-            <ul id="lista-titulares" class="space-y-1.5 text-sm"></ul>
-          </div>
         </div>
+    </main>
 
-        <div class="glass rounded-2xl p-6 mb-5">
-          <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-4">📅 Plan táctico semanal</h3>
-          <div class="grid sm:grid-cols-3 gap-4" id="plan-semanal"></div>
+    <!-- Modal Recarga -->
+    <div id="rechargeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="glass-card p-6 rounded-2xl max-w-md w-full relative">
+            <button onclick="document.getElementById('rechargeModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h3 class="text-lg font-bold text-white mb-4">Recargar Créditos (Perú)</h3>
+            <p class="text-xs text-slate-400 mb-4">1 Crédito = 1 Análisis. Transfiere y sube tu voucher.</p>
+            
+            <div class="flex gap-2 mb-4">
+                <div class="flex-1 bg-slate-900 p-3 rounded-xl border border-purple-500 text-center">
+                    <p class="text-[10px] font-bold text-purple-400 uppercase">Yape / Plin</p>
+                    <p class="text-sm font-black text-white">999 888 777</p>
+                    <p class="text-[10px] text-slate-500">AdVance AI SAC</p>
+                </div>
+            </div>
+
+            <form id="rechargeForm" class="space-y-4">
+                <select name="method" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-200 outline-none">
+                    <option value="YAPE">Yape</option>
+                    <option value="PLIN">Plin</option>
+                    <option value="BCP">BCP</option>
+                </select>
+                <input type="number" name="amount" placeholder="Monto depositado (S/)" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-200 outline-none">
+                <input type="file" name="receipt" required accept="image/*" class="w-full text-xs text-slate-400">
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-sm transition">Enviar Comprobante</button>
+            </form>
         </div>
-
-        <div class="glass rounded-2xl p-6">
-          <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-300 mb-4">⚡ Recomendaciones clave</h3>
-          <ol id="lista-recomendaciones" class="space-y-3 text-sm text-slate-300"></ol>
-        </div>
-      </div>
-
-      <div id="paywall-overlay" class="hidden absolute inset-0 backdrop-blur-md bg-black/40 rounded-2xl flex items-center justify-center p-6 z-10">
-        <div class="glass rounded-2xl p-8 text-center max-w-sm shadow-glow">
-          <p class="text-lg font-bold mb-2">🔒 Desbloquea el análisis completo</p>
-          <p class="text-sm text-slate-300 mb-5">Dashboard, módulo Google Ads, carrusel HD y plan semanal por
-            <strong id="precio-pen">S/ 10.00</strong> o <strong id="precio-usd">$2.99 USD</strong></p>
-          <button id="btn-desbloquear" class="btn-press w-full rounded-xl bg-gradient-to-r from-indigo to-violet py-3 font-semibold text-white">Desbloquear ahora</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TAB: Carrusel -->
-  <section id="tab-carrusel" class="hidden mb-16 fade-in">
-    <div id="preview-copy-card" class="hidden glass rounded-2xl p-6 mb-5">
-      <span class="text-[10px] uppercase tracking-wide text-indigo bg-indigo/10 border border-indigo/30 rounded-full px-2 py-0.5">Vista previa gratuita</span>
-      <h3 id="preview-copy-titulo" class="text-lg font-bold font-display mt-2"></h3>
-      <p id="preview-copy-descripcion" class="text-sm text-slate-400 mt-1"></p>
     </div>
 
-    <div id="carrusel-locked" class="hidden glass rounded-2xl p-10 text-center">
-      <p class="text-lg font-bold mb-2">🔒 El carrusel HD se desbloquea junto con tu análisis completo</p>
-      <p class="text-sm text-slate-400 mb-5">5 placas fotorrealistas listas para publicar, con overlay de texto profesional.</p>
-      <button class="btn-desbloquear-2 btn-press rounded-xl bg-gradient-to-r from-indigo to-violet px-6 py-3 font-semibold text-white">Desbloquear ahora</button>
-    </div>
+    <script>
+        {% if not user %}
+        document.getElementById('adsForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert("Debes iniciar sesión con Google para generar análisis.");
+            window.location.href = "/auth/login";
+        });
+        {% else %}
+        document.getElementById('adsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
 
-    <div id="carrusel-contenido" class="hidden">
-      <div class="flex items-baseline justify-between mb-5 flex-wrap gap-3">
-        <h2 id="nombre-campana" class="text-2xl font-bold font-display"></h2>
-        <button id="btn-copiar-hashtags" class="btn-press text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-full px-3 py-1.5 glass">📋 Copiar hashtags</button>
-      </div>
-      <div id="hashtags" class="flex flex-wrap gap-2 mb-3 text-xs text-violet"></div>
-      <p class="text-xs text-slate-500 mb-3 md:hidden">← Desliza para ver las 5 placas →</p>
-      <div id="placas" class="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-4 -mx-6 px-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10 md:mx-0 md:px-0"></div>
-      <button id="btn-nuevo-angulo" class="hidden btn-press mt-6 w-full sm:w-auto rounded-xl bg-gradient-to-r from-indigo to-violet px-6 py-3 font-semibold text-white shadow-glow hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed">
-        ✨ Generar otro carrusel con diferente enfoque
-      </button>
-    </div>
-  </section>
+            document.getElementById('fodaSection').classList.remove('hidden');
+            document.getElementById('premiumSection').classList.remove('hidden');
+            document.getElementById('fodaContent').innerHTML = '<p>Analizando...</p>';
+            
+            // Restablecer estilos de premium
+            document.getElementById('premiumContent').classList.remove('paywall-blur');
+            document.getElementById('paywallOverlay').classList.add('hidden');
+            document.getElementById('carouselContent').innerHTML = '';
 
-</div>
+            try {
+                const response = await fetch('/api/generate', { method: 'POST', body: formData });
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
 
-<!-- Modal de recarga -->
-<div id="modal-recarga" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-  <div class="glass rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-bold">Recargar créditos</h3>
-      <button id="btn-cerrar-recarga" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
-    </div>
-    {% if test_mode %}
-    <div class="bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs rounded-lg p-3 mb-4">
-      ⚠️ MODO PRUEBA — datos bancarios y QR de ejemplo, no reales. Sirve para probar el flujo completo.
-    </div>
-    {% endif %}
-    <form id="form-recarga" class="space-y-4">
-      <div>
-        <label class="block text-xs text-slate-300 mb-1.5">Monto</label>
-        <select id="recarga-monto" class="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm">
-          <option value="S/ 10.00">S/ 10.00 (1 análisis completo)</option>
-          <option value="$2.99 USD">$2.99 USD (1 análisis completo)</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-300 mb-1.5">Método de pago</label>
-        <select id="recarga-metodo" class="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm">
-          <option>YAPE</option><option>PLIN</option><option>BCP</option><option>Interbank</option>
-        </select>
-      </div>
-      <div class="glass rounded-lg p-3 text-xs text-slate-300 space-y-1">
-        <p>📱 Yape/Plin: <strong>999 888 777</strong> — Juan Pérez (PRUEBA)</p>
-        <p>🏦 BCP: <strong>191-1234567-0-89</strong> (PRUEBA)</p>
-        <p>🏦 Interbank: <strong>200-3001234567</strong> (PRUEBA)</p>
-        <img src="https://placehold.co/160x160/1e1b2e/818cf8?text=QR+PRUEBA" class="rounded-lg mt-2" alt="QR de prueba">
-      </div>
-      <div>
-        <label class="block text-xs text-slate-300 mb-1.5">Comprobante de pago (captura)</label>
-        <input id="recarga-comprobante" type="file" accept="image/*" required
-          class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo/20 file:text-indigo file:text-xs">
-      </div>
-      <button type="submit" class="btn-press w-full rounded-xl bg-gradient-to-r from-indigo to-violet py-3 font-semibold text-white">Enviar comprobante</button>
-      <p id="recarga-resultado" class="hidden text-xs text-center"></p>
-    </form>
-  </div>
-</div>
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    const events = chunk.split('\n\n');
+                    
+                    for (const ev of events) {
+                        if (!ev.trim()) continue;
+                        const eventMatch = ev.match(/event: (.*?)\n/);
+                        const dataMatch = ev.match(/data: (.*)/);
+                        
+                        if (eventMatch && dataMatch) {
+                            const eventName = eventMatch[1];
+                            const data = JSON.parse(dataMatch[1]);
 
-<script>
-let usuarioActual = null;
-let chartScore = null;
-let chartComparativo = null;
-let placasData = {};
-let ultimoBusinessUrl = '';
-let ultimoCompetitorUrl = '';
-const ANGULOS = ['Educativo', 'Oferta Agresiva', 'Comparativa', 'Emocional', 'Urgencia'];
-let anguloIndex = -1;
+                            if (eventName === 'foda') {
+                                document.getElementById('fodaContent').innerHTML = `
+                                    <div class="bg-slate-900 p-2 rounded"><b>F:</b> ${data.fortaleza}</div>
+                                    <div class="bg-slate-900 p-2 rounded"><b>O:</b> ${data.oportunidad}</div>
+                                    <div class="bg-slate-900 p-2 rounded"><b>D:</b> ${data.debilidad}</div>
+                                    <div class="bg-slate-900 p-2 rounded"><b>A:</b> ${data.amenaza}</div>
+                                `;
+                            } else if (eventName === 'paywall') {
+                                document.getElementById('premiumContent').classList.add('paywall-blur');
+                                document.getElementById('paywallOverlay').classList.remove('hidden');
+                            } else if (eventName === 'premium_content') {
+                                document.getElementById('copyContent').innerText = data.aida_copy;
+                                document.getElementById('metricsContent').innerHTML = `
+                                    <div class="bg-slate-800 p-2 rounded">CTR<br><span class="text-indigo-400">${data.metrics.ctr}</span></div>
+                                    <div class="bg-slate-800 p-2 rounded">CPC<br><span class="text-emerald-400">${data.metrics.cpc}</span></div>
+                                    <div class="bg-slate-800 p-2 rounded">ROI<br><span class="text-amber-400">${data.metrics.roi}</span></div>
+                                `;
+                                data.images.forEach(img => {
+                                    document.getElementById('carouselContent').innerHTML += `<img src="${img}" class="rounded-lg w-full aspect-square object-cover">`;
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
 
-const form = document.getElementById('form-analizar');
-const btn = document.getElementById('btn-analizar');
-const btnTexto = document.getElementById('btn-texto');
-const formError = document.getElementById('form-error');
-const progreso = document.getElementById('progreso');
-const mensajeActual = document.getElementById('mensaje-actual');
-const barraProgreso = document.getElementById('barra-progreso');
-const pasosEl = document.getElementById('pasos');
-const tabs = document.getElementById('tabs');
-const tabDashboard = document.getElementById('tab-dashboard');
-const tabCarrusel = document.getElementById('tab-carrusel');
-const btnNuevoAngulo = document.getElementById('btn-nuevo-angulo');
-const nombreCampana = document.getElementById('nombre-campana');
-const hashtagsEl = document.getElementById('hashtags');
-const placasEl = document.getElementById('placas');
-const bloqueableContenido = document.getElementById('bloqueable-contenido');
-const paywallOverlay = document.getElementById('paywall-overlay');
-const carruselLocked = document.getElementById('carrusel-locked');
-const carruselContenido = document.getElementById('carrusel-contenido');
-const previewCopyCard = document.getElementById('preview-copy-card');
-
-const PASOS = [
-  { key: 'scraping',   label: 'Scraping' },
-  { key: 'estrategia', label: 'Estrategia IA' },
-  { key: 'imagen-0',   label: 'Placa 1' },
-  { key: 'imagen-1',   label: 'Placa 2' },
-  { key: 'imagen-2',   label: 'Placa 3' },
-  { key: 'imagen-3',   label: 'Placa 4' },
-  { key: 'imagen-4',   label: 'Placa 5' },
-  { key: 'completo',   label: 'Listo' },
-];
-
-// ---------- Sesión / header ----------
-async function cargarUsuario() {
-  const res = await fetch('/api/me');
-  const data = await res.json();
-  const zona = document.getElementById('zona-usuario');
-  if (!data.autenticado) {
-    usuarioActual = null;
-    zona.innerHTML = `<a href="/auth/login" class="btn-press bg-gradient-to-r from-indigo to-violet text-white text-sm font-semibold rounded-full px-4 py-2">Iniciar sesión con Google</a>`;
-    return;
-  }
-  usuarioActual = data;
-  const creditosHtml = data.role === 'admin'
-    ? `<span class="text-xs font-semibold text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-3 py-1">♾️ Admin</span>`
-    : `<span id="badge-creditos" class="text-xs font-semibold text-indigo bg-indigo/10 border border-indigo/30 rounded-full px-3 py-1">💳 ${data.credits} créditos</span>`;
-  zona.innerHTML = `
-    ${data.picture ? `<img src="${data.picture}" class="w-7 h-7 rounded-full border border-white/10">` : ''}
-    <span class="hidden sm:inline text-slate-300">${data.name || data.email}</span>
-    ${creditosHtml}
-    <button id="btn-abrir-recarga" class="text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-full px-3 py-1.5 glass">Recargar</button>
-    ${data.role === 'admin' ? `<a href="/admin" class="text-xs text-slate-300 hover:text-indigo transition">Admin</a>` : ''}
-    <a href="/auth/logout" class="text-xs text-slate-500 hover:text-red-400 transition">Salir</a>`;
-  document.getElementById('btn-abrir-recarga')?.addEventListener('click', abrirModalRecarga);
-}
-cargarUsuario();
-
-// ---------- Modal de recarga ----------
-function abrirModalRecarga() { document.getElementById('modal-recarga').classList.remove('hidden'); }
-document.getElementById('btn-cerrar-recarga').addEventListener('click', () => document.getElementById('modal-recarga').classList.add('hidden'));
-document.getElementById('btn-desbloquear').addEventListener('click', abrirModalRecarga);
-document.addEventListener('click', (e) => { if (e.target.closest('.btn-desbloquear-2')) abrirModalRecarga(); });
-
-document.getElementById('form-recarga').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const archivo = document.getElementById('recarga-comprobante').files[0];
-  if (!archivo) return;
-  const fd = new FormData();
-  fd.append('monto', document.getElementById('recarga-monto').value);
-  fd.append('metodo', document.getElementById('recarga-metodo').value);
-  fd.append('creditos', '1');
-  fd.append('comprobante', archivo);
-  const resultado = document.getElementById('recarga-resultado');
-  resultado.classList.remove('hidden', 'text-red-400', 'text-emerald-400');
-  resultado.textContent = 'Enviando...';
-  try {
-    const res = await fetch('/api/recargas', { method: 'POST', body: fd });
-    if (res.status === 401) { window.location.href = '/auth/login'; return; }
-    const data = await res.json();
-    resultado.textContent = data.mensaje || 'Comprobante enviado.';
-    resultado.classList.add('text-emerald-400');
-  } catch (err) {
-    resultado.textContent = 'Error al enviar. Intenta de nuevo.';
-    resultado.classList.add('text-red-400');
-  }
-});
-
-// ---------- Tabs ----------
-document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => activarTab(b.dataset.tab)));
-function activarTab(nombre) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('activo', b.dataset.tab === nombre));
-  tabDashboard.classList.toggle('hidden', nombre !== 'dashboard');
-  tabCarrusel.classList.toggle('hidden', nombre !== 'carrusel');
-}
-
-function pintarPasos(activaKey, hecho) {
-  pasosEl.innerHTML = PASOS.map(p => {
-    const activo = p.key === activaKey;
-    const completado = hecho.has(p.key);
-    const dot = completado ? 'bg-indigo' : activo ? 'bg-indigo step-active' : 'bg-white/15';
-    const texto = completado || activo ? 'text-slate-100' : 'text-slate-500';
-    const icono = completado ? '✓' : '';
-    return `<div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full ${dot}"></span><span class="${texto}">${icono ? icono + ' ' : ''}${p.label}</span></div>`;
-  }).join('');
-  const idx = PASOS.findIndex(p => p.key === activaKey);
-  barraProgreso.style.width = `${Math.max(4, Math.round(((idx + 1) / PASOS.length) * 100))}%`;
-}
-
-function renderCharts(data) {
-  const score = data.score_competencia;
-  document.getElementById('score-numero').textContent = `${score}%`;
-  if (chartScore) chartScore.destroy();
-  chartScore = new Chart(document.getElementById('chart-score'), {
-    type: 'doughnut',
-    data: { datasets: [{ data: [score, 100 - score], backgroundColor: ['#6366f1', 'rgba(255,255,255,0.06)'], borderWidth: 0 }] },
-    options: { cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 900 } },
-  });
-  const m = data.metricas_comparativas;
-  const claves = ['engagement', 'calidad_contenido', 'frecuencia'];
-  if (chartComparativo) chartComparativo.destroy();
-  chartComparativo = new Chart(document.getElementById('chart-comparativo'), {
-    type: 'bar',
-    data: {
-      labels: ['Engagement', 'Calidad de contenido', 'Frecuencia'],
-      datasets: [
-        { label: 'Tu negocio', data: claves.map(k => m[k].tu_negocio), backgroundColor: '#6366f1', borderRadius: 6 },
-        { label: 'Competencia', data: claves.map(k => m[k].competencia), backgroundColor: '#8b5cf6', borderRadius: 6 },
-      ],
-    },
-    options: {
-      responsive: true, plugins: { legend: { labels: { color: '#cbd5e1' } } },
-      scales: { x: { ticks: { color: '#94a3b8' }, grid: { display: false } }, y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true, max: 100 } },
-    },
-  });
-}
-
-function renderSwot(swot) {
-  document.getElementById('lista-fortalezas-rival').innerHTML = swot.fortalezas_rival.map(f => `<li class="flex gap-2"><span class="text-indigo">→</span>${f}</li>`).join('');
-  document.getElementById('lista-debiles-rival').innerHTML = swot.puntos_debiles_rival.map(d => `<li class="flex gap-2"><span class="text-violet">→</span>${d}</li>`).join('');
-}
-
-function renderPlanSemanal(plan) {
-  const dias = [['lunes', 'Lunes'], ['miercoles', 'Miércoles'], ['viernes', 'Viernes']];
-  document.getElementById('plan-semanal').innerHTML = dias.map(([key, label]) => `
-    <div class="glass rounded-xl p-4">
-      <span class="text-[10px] font-semibold uppercase tracking-wide text-indigo bg-indigo/10 border border-indigo/30 rounded-full px-2 py-0.5">${label}</span>
-      <p class="text-sm font-medium mt-2">${plan[key].idea}</p>
-      <p class="text-xs text-slate-400 mt-1">${plan[key].objetivo}</p>
-    </div>`).join('');
-}
-
-function renderRecomendaciones(lista) {
-  document.getElementById('lista-recomendaciones').innerHTML = lista.map((r, i) => `
-    <li class="flex gap-3"><span class="shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-indigo to-violet text-white text-xs font-bold flex items-center justify-center">${i + 1}</span><span>${r}</span></li>`).join('');
-}
-
-function renderAdsModule(data) {
-  document.getElementById('ad-rank-score').textContent = `${data.ad_rank_score}/100`;
-  document.getElementById('kw-positivas').innerHTML = data.palabras_clave_positivas.map(k => `<span class="glass rounded-full px-2.5 py-1 text-[11px] text-emerald-300">${k}</span>`).join('');
-  document.getElementById('kw-negativas').innerHTML = data.palabras_clave_negativas.map(k => `<span class="glass rounded-full px-2.5 py-1 text-[11px] text-red-300">${k}</span>`).join('');
-  const a = data.copy_aida;
-  document.getElementById('aida-atencion').textContent = a.atencion;
-  document.getElementById('aida-interes').textContent = a.interes;
-  document.getElementById('aida-deseo').textContent = a.deseo;
-  document.getElementById('aida-accion').textContent = a.accion;
-  document.getElementById('lista-titulares').innerHTML = data.titulares.map(t => `<li class="glass rounded-lg px-3 py-2">${t}</li>`).join('');
-  const m = data.metricas_ads;
-  document.getElementById('metricas-ads').innerHTML = `
-    <div><span class="text-slate-400">CTR est.:</span> ${m.ctr_estimado}</div>
-    <div><span class="text-slate-400">CPC est.:</span> ${m.cpc_estimado}</div>
-    <div><span class="text-slate-400">ROI est.:</span> ${m.roi_estimado}</div>`;
-}
-
-function manejarErrorImagen(img) {
-  img.outerHTML = `<div class="absolute inset-0 flex items-center justify-center bg-white/5 text-white/50 text-xs text-center px-3">⚠️ No se pudo cargar la imagen</div>`;
-}
-
-function crearPlaca(index, total, tipo, titulo, descripcion) {
-  const numero = String(index + 1).padStart(2, '0');
-  return `<div id="placa-${index}" class="glass rounded-2xl overflow-hidden shrink-0 w-[82%] sm:w-[300px] snap-center flex flex-col">
-    <div class="relative aspect-[4/5]">
-      <div id="fondo-${index}" class="absolute inset-0 skeleton flex items-center justify-center">
-        <span class="text-[11px] text-white/70 font-medium text-center px-4">✨ Generando fondo visual HD con IA...</span>
-      </div>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/5 pointer-events-none"></div>
-      <span class="absolute top-3 left-3 text-[10px] font-semibold uppercase tracking-wide bg-white/10 backdrop-blur border border-white/20 text-white rounded-full px-3 py-1">PLACA ${numero} / ${String(total).padStart(2, '0')} · ${tipo}</span>
-      <div class="absolute bottom-0 inset-x-0 p-4">
-        <h3 class="text-white font-display font-extrabold text-lg leading-tight" style="text-shadow:0 2px 14px rgba(0,0,0,0.85)">${titulo}</h3>
-        <p class="text-white/90 text-xs mt-1.5 leading-relaxed" style="text-shadow:0 1px 8px rgba(0,0,0,0.85)">${descripcion}</p>
-      </div>
-    </div>
-    <div class="p-3 flex gap-2 bg-black/20">
-      <button class="btn-press btn-copiar-copy flex-1 text-xs text-slate-300 hover:text-indigo transition border border-white/10 rounded-lg px-3 py-1.5">📋 Copiar texto</button>
-      <button class="btn-press btn-descargar flex-1 text-xs font-semibold text-white bg-gradient-to-r from-indigo to-violet rounded-lg px-3 py-1.5 opacity-40 pointer-events-none">⬇️ Descargar HD</button>
-    </div>
-  </div>`;
-}
-
-async function descargarImagen(url, nombreArchivo, boton) {
-  const original = boton.textContent;
-  boton.textContent = '⏳ Descargando...';
-  try {
-    const resp = await fetch(url);
-    const blob = await resp.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl; a.download = `${nombreArchivo}.jpg`;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(blobUrl);
-  } catch (err) { window.open(url, '_blank'); }
-  finally { boton.textContent = original; }
-}
-
-function copiarTexto(texto, boton) {
-  navigator.clipboard.writeText(texto);
-  const original = boton.textContent;
-  boton.textContent = '✓ Copiado';
-  setTimeout(() => { boton.textContent = original; }, 1500);
-}
-
-// ---------- Flujo principal ----------
-async function manejarEnvio(e) {
-  e.preventDefault();
-  if (!usuarioActual) { window.location.href = '/auth/login'; return; }
-  const business_url = document.getElementById('business_url').value.trim();
-  const competitor_url = document.getElementById('competitor_url').value.trim();
-  ultimoBusinessUrl = business_url;
-  ultimoCompetitorUrl = competitor_url;
-  anguloIndex = -1;
-  await ejecutarAnalisis(business_url, competitor_url, null);
-}
-
-async function generarNuevoAngulo() {
-  anguloIndex = (anguloIndex + 1) % ANGULOS.length;
-  await ejecutarAnalisis(ultimoBusinessUrl, ultimoCompetitorUrl, ANGULOS[anguloIndex]);
-}
-
-async function ejecutarAnalisis(business_url, competitor_url, angulo) {
-  formError.classList.add('hidden');
-  btn.disabled = true; btnNuevoAngulo.disabled = true;
-  btnTexto.textContent = angulo ? `Generando enfoque "${angulo}"…` : 'Generando campaña…';
-  progreso.classList.remove('hidden');
-  tabs.classList.add('hidden'); tabDashboard.classList.add('hidden'); tabCarrusel.classList.add('hidden');
-  btnNuevoAngulo.classList.add('hidden');
-  paywallOverlay.classList.add('hidden');
-  bloqueableContenido.classList.remove('blur-sm', 'pointer-events-none', 'select-none');
-  previewCopyCard.classList.add('hidden'); carruselLocked.classList.add('hidden'); carruselContenido.classList.add('hidden');
-  placasEl.innerHTML = ''; placasData = {};
-  barraProgreso.style.width = '4%';
-  const hecho = new Set();
-  pintarPasos('scraping', hecho);
-
-  try {
-    const res = await fetch('/api/analyze', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ business_url, competitor_url, angulo }),
-    });
-    if (res.status === 401) { window.location.href = '/auth/login'; return; }
-    if (!res.ok || !res.body) throw new Error('No se pudo iniciar el análisis.');
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const bloques = buffer.split('\n\n');
-      buffer = bloques.pop();
-      for (const bloque of bloques) {
-        const linea = bloque.split('\n').find(l => l.startsWith('data: '));
-        if (!linea) continue;
-        procesarEvento(JSON.parse(linea.slice(6)), hecho);
-      }
-    }
-  } catch (err) {
-    formError.textContent = err.message || 'Ocurrió un error al generar la campaña.';
-    formError.classList.remove('hidden');
-  } finally {
-    btn.disabled = false; btnNuevoAngulo.disabled = false;
-    btnTexto.textContent = 'Analizar Competencia y Generar Publicidad';
-  }
-}
-
-function procesarEvento(evento, hecho) {
-  const { stage, status, mensaje, data } = evento;
-  const key = stage === 'imagen' ? `imagen-${data.index}` : stage;
-  if (mensaje) mensajeActual.textContent = mensaje;
-  if (status === 'done') hecho.add(key);
-  pintarPasos(key, hecho);
-
-  if (stage === 'estrategia' && status === 'done') {
-    tabs.classList.remove('hidden'); tabDashboard.classList.remove('hidden'); activarTab('dashboard');
-    document.getElementById('diagnostico-general').textContent = data.diagnostico_general;
-    renderSwot(data.matriz_swot);
-    nombreCampana.textContent = data.nombre_campana;
-
-    if (data.bloqueado) {
-      bloqueableContenido.classList.add('blur-sm', 'pointer-events-none', 'select-none');
-      paywallOverlay.classList.remove('hidden');
-      document.getElementById('precio-pen').textContent = data.precio_pen;
-      document.getElementById('precio-usd').textContent = data.precio_usd;
-      document.getElementById('preview-copy-titulo').textContent = data.preview_copy.titulo;
-      document.getElementById('preview-copy-descripcion').textContent = data.preview_copy.descripcion;
-      previewCopyCard.classList.remove('hidden');
-      tabCarrusel.classList.remove('hidden');
-      carruselLocked.classList.remove('hidden');
-    } else {
-      renderCharts(data);
-      renderPlanSemanal(data.plan_semanal);
-      renderRecomendaciones(data.recomendaciones_clave);
-      renderAdsModule(data);
-      hashtagsEl.innerHTML = data.hashtags.map(h => `<span class="glass rounded-full px-3 py-1">${h}</span>`).join('');
-      carruselContenido.classList.remove('hidden');
-    }
-  }
-
-  if (stage === 'imagen' && status === 'start') {
-    tabCarrusel.classList.remove('hidden');
-    btnNuevoAngulo.classList.remove('hidden');
-    placasData[data.index] = { tipo: data.tipo, titulo: data.titulo, descripcion: data.descripcion };
-    placasEl.insertAdjacentHTML('beforeend', crearPlaca(data.index, data.total, data.tipo, data.titulo, data.descripcion));
-    document.getElementById(`placa-${data.index}`).querySelector('.btn-copiar-copy').addEventListener('click', (e) =>
-      copiarTexto(`${placasData[data.index].titulo} — ${placasData[data.index].descripcion}`, e.target));
-  }
-
-  if (stage === 'imagen' && status === 'done') {
-    placasData[data.index].image_url = data.image_url;
-    const fondo = document.getElementById(`fondo-${data.index}`);
-    if (fondo) fondo.outerHTML = `<img id="fondo-${data.index}" src="${data.image_url}" alt="Fondo de placa" onerror="manejarErrorImagen(this)" class="absolute inset-0 w-full h-full object-cover" loading="lazy">`;
-    const placa = document.getElementById(`placa-${data.index}`);
-    const btnDescargar = placa?.querySelector('.btn-descargar');
-    if (btnDescargar) {
-      btnDescargar.classList.remove('opacity-40', 'pointer-events-none');
-      btnDescargar.addEventListener('click', (e) => descargarImagen(data.image_url, `adgenius-placa-${data.index + 1}-${placasData[data.index].tipo}`.toLowerCase(), e.target));
-    }
-  }
-
-  if (stage === 'completo' && status === 'done') {
-    btnNuevoAngulo.classList.remove('hidden');
-    if (data?.creditos_restantes !== undefined) {
-      const badge = document.getElementById('badge-creditos');
-      if (badge) badge.textContent = `💳 ${data.creditos_restantes} créditos`;
-    }
-  }
-
-  if (stage === 'error') {
-    formError.textContent = data?.mensaje || mensaje || 'Ocurrió un error durante la generación.';
-    formError.classList.remove('hidden');
-  }
-}
-
-document.getElementById('btn-copiar-hashtags').addEventListener('click', (e) => {
-  copiarTexto([...hashtagsEl.querySelectorAll('span')].map(s => s.textContent).join(' '), e.target);
-});
-btnNuevoAngulo.addEventListener('click', generarNuevoAngulo);
-form.addEventListener('submit', manejarEnvio);
-</script>
+        document.getElementById('rechargeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const res = await fetch('/api/recharge', { method: 'POST', body: fd });
+            const data = await res.json();
+            if(data.success) {
+                alert("Comprobante enviado. El administrador aprobará tu recarga en breve.");
+                document.getElementById('rechargeModal').classList.add('hidden');
+                e.target.reset();
+            }
+        });
+        {% endif %}
+    </script>
 </body>
 </html>

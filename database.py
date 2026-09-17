@@ -1,125 +1,72 @@
-"""
-database.py — Capa de datos SQLite para AdGenius (usuarios, créditos, recargas).
-
-⚠️ PERSISTENCIA EN RENDER (plan free): el disco es efímero. Este archivo .db
-y los comprobantes subidos se BORRAN en cada redeploy/reinicio del servicio.
-Válido para pruebas; antes de manejar dinero real usa un Persistent Disk
-(plan pago) o una base externa (Render Postgres, Supabase, Neon...). Toda la
-lógica de acceso a datos vive aquí: migrar después solo implica reescribir
-estas funciones.
-"""
-
-import os
 import sqlite3
-import time
+import os
 from contextlib import contextmanager
 
-DB_PATH = os.getenv("DB_PATH", "adgenius.db")
-ADMIN_EMAILS = {e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()}
+DB_PATH = os.getenv("DB_PATH", "advance.db")
 
+def init_db():
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS users
+                     (email TEXT PRIMARY KEY, name TEXT, role TEXT, credits INTEGER)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS transactions
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                      user_email TEXT, amount REAL, method TEXT, 
+                      receipt_path TEXT, status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+        conn.commit()
 
 @contextmanager
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
     try:
         yield conn
-        conn.commit()
     finally:
         conn.close()
 
-
-def init_db():
+def create_or_update_user(email: str, name: str, default_role: str):
     with get_db() as db:
-        db.execute("""CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            name TEXT,
-            picture TEXT,
-            role TEXT NOT NULL DEFAULT 'user',
-            credits INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL
-        )""")
-        db.execute("""CREATE TABLE IF NOT EXISTS recargas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            monto TEXT,
-            metodo TEXT,
-            creditos INTEGER NOT NULL DEFAULT 1,
-            comprobante_path TEXT,
-            estado TEXT NOT NULL DEFAULT 'pendiente',
-            created_at INTEGER NOT NULL,
-            resuelto_at INTEGER
-        )""")
-
-
-def upsert_user(user_id: str, email: str, name: str, picture: str) -> sqlite3.Row:
-    """Crea o actualiza el usuario tras el login. El rol se sincroniza con
-    ADMIN_EMAILS en cada login (solo puede subir a admin, nunca lo baja solo)."""
-    email_l = email.lower()
-    role_si_admin = "admin" if email_l in ADMIN_EMAILS else None
-    with get_db() as db:
-        existing = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-        if existing:
-            nuevo_role = role_si_admin or existing["role"]
-            db.execute("UPDATE users SET email=?, name=?, picture=?, role=? WHERE id=?",
-                       (email_l, name, picture, nuevo_role, user_id))
+        user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        if not user:
+            db.execute("INSERT INTO users (email, name, role, credits) VALUES (?, ?, ?, ?)", 
+                       (email, name, default_role, 1)) # 1 crédito de bienvenida
+            db.commit()
+            return {"email": email, "name": name, "role": default_role, "credits": 1}
         else:
-            db.execute(
-                "INSERT INTO users (id, email, name, picture, role, credits, created_at) VALUES (?,?,?,?,?,?,?)",
-                (user_id, email_l, name, picture, role_si_admin or "user", 0, int(time.time())))
-    return get_user(user_id)
+            # Actualizar rol por si cambió ADMIN_EMAILS
+            db.execute("UPDATE users SET role = ? WHERE email = ?", (default_role, email))
+            db.commit()
+            return dict(db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone())
 
-
-def get_user(user_id: str):
+def get_user(email: str):
     with get_db() as db:
-        return db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+        user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        return dict(user) if user else None
 
-
-def add_credits(user_id: str, cantidad: int):
+def deduct_credit(email: str):
     with get_db() as db:
-        db.execute("UPDATE users SET credits = credits + ? WHERE id=?", (cantidad, user_id))
+        db.execute("UPDATE users SET credits = credits - 1 WHERE email = ? AND credits > 0", (email,))
+        db.commit()
 
-
-def consumir_credito(user_id: str) -> bool:
+def add_transaction(email: str, amount: float, method: str, receipt_path: str):
     with get_db() as db:
-        row = db.execute("SELECT credits FROM users WHERE id=?", (user_id,)).fetchone()
-        if not row or row["credits"] <= 0:
-            return False
-        db.execute("UPDATE users SET credits = credits - 1 WHERE id=?", (user_id,))
-        return True
+        db.execute("INSERT INTO transactions (user_email, amount, method, receipt_path, status) VALUES (?, ?, ?, ?, ?)",
+                   (email, amount, method, receipt_path, "PENDIENTE"))
+        db.commit()
 
-
-def crear_recarga(user_id: str, monto: str, metodo: str, creditos: int, comprobante_path: str) -> int:
+def get_pending_transactions():
     with get_db() as db:
-        cur = db.execute(
-            "INSERT INTO recargas (user_id, monto, metodo, creditos, comprobante_path, estado, created_at) "
-            "VALUES (?,?,?,?,?, 'pendiente', ?)",
-            (user_id, monto, metodo, creditos, comprobante_path, int(time.time())))
-        return cur.lastrowid
+        return [dict(row) for row in db.execute("SELECT * FROM transactions WHERE status = 'PENDIENTE' ORDER BY created_at DESC")]
 
-
-def listar_recargas_pendientes():
+def approve_transaction(tx_id: int):
     with get_db() as db:
-        return db.execute("""SELECT r.*, u.email, u.name FROM recargas r
-                              JOIN users u ON u.id = r.user_id
-                              WHERE r.estado='pendiente' ORDER BY r.created_at ASC""").fetchall()
-
-
-def obtener_recarga(recarga_id: int):
-    with get_db() as db:
-        return db.execute("SELECT * FROM recargas WHERE id=?", (recarga_id,)).fetchone()
-
-
-def resolver_recarga(recarga_id: int, aprobar: bool) -> bool:
-    with get_db() as db:
-        r = db.execute("SELECT * FROM recargas WHERE id=?", (recarga_id,)).fetchone()
-        if not r or r["estado"] != "pendiente":
-            return False
-        nuevo_estado = "aprobado" if aprobar else "rechazado"
-        db.execute("UPDATE recargas SET estado=?, resuelto_at=? WHERE id=?",
-                   (nuevo_estado, int(time.time()), recarga_id))
-        if aprobar:
-            db.execute("UPDATE users SET credits = credits + ? WHERE id=?", (r["creditos"], r["user_id"]))
-        return True
+        tx = db.execute("SELECT * FROM transactions WHERE id = ?", (tx_id,)).fetchone()
+        if tx and tx['status'] == 'PENDIENTE':
+            # 10 Soles = 1 Crédito, 35 Soles = 10 créditos (lógica base)
+            amount = float(tx['amount'])
+            credits_to_add = 10 if amount >= 30 else 3
+            db.execute("UPDATE users SET credits = credits + ? WHERE email = ?", (credits_to_add, tx['user_email']))
+            db.execute("UPDATE transactions SET status = 'APROBADA' WHERE id = ?", (tx_id,))
+            db.commit()
+            return True
+        return False
