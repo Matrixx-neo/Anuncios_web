@@ -1,71 +1,39 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - AdVance AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-    <style>
-        body { background-color: #08090d; color: #e2e8f0; }
-        .glass-panel { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
-    </style>
 </head>
-<body class="p-6">
-    <div class="max-w-5xl mx-auto">
+<body class="bg-slate-950 text-slate-200 p-6">
+    <div class="max-w-3xl mx-auto">
         <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold text-white"><i class="fa-solid fa-shield-halved text-indigo-500"></i> Panel de Administración</h1>
-            <a href="/" class="text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded transition">Volver al Home</a>
+            <h1 class="text-xl font-bold">Vouchers Pendientes</h1>
+            <a href="/" class="text-indigo-400">Volver</a>
         </div>
-
-        <div class="glass-panel rounded-xl overflow-hidden shadow-2xl">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-white/5 border-b border-white/10 text-gray-300">
-                    <tr>
-                        <th class="p-4">Usuario</th>
-                        <th class="p-4">Fecha</th>
-                        <th class="p-4">Operación</th>
-                        <th class="p-4">Voucher</th>
-                        <th class="p-4 text-right">Acción</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5">
-                    {% for tx in transactions %}
-                    <tr id="tx-{{ tx.id }}" class="hover:bg-white/5 transition">
-                        <td class="p-4 font-medium">{{ tx.email }}</td>
-                        <td class="p-4 text-gray-400">{{ tx.created_at }}</td>
-                        <td class="p-4"><span class="bg-black/50 px-2 py-1 rounded text-xs font-mono">{{ tx.operation_code or 'N/A' }}</span></td>
-                        <td class="p-4">
-                            {% if tx.voucher_b64 %}
-                                <a href="data:image/jpeg;base64,{{ tx.voucher_b64 }}" target="_blank" class="text-indigo-400 hover:underline"><i class="fa-solid fa-image"></i> Ver</a>
-                            {% else %}
-                                <span class="text-gray-500">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="p-4 text-right gap-2 flex justify-end">
-                            <button onclick="resolveTx({{ tx.id }}, 'approved')" class="bg-green-600/80 hover:bg-green-500 text-white px-3 py-1 rounded text-xs transition"><i class="fa-solid fa-check"></i> Aprobar</button>
-                            <button onclick="resolveTx({{ tx.id }}, 'rejected')" class="bg-red-600/80 hover:bg-red-500 text-white px-3 py-1 rounded text-xs transition"><i class="fa-solid fa-times"></i> Rechazar</button>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="p-8 text-center text-gray-500">No hay transacciones pendientes.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="space-y-4">
+            {% for tx in txs %}
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex justify-between items-center" id="tx-{{ tx.id }}">
+                <div>
+                    <p class="font-bold">{{ tx.user_email }}</p>
+                    <p class="text-xs text-slate-500">{{ tx.created_at }}</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{{ tx.receipt_path }}" target="_blank" class="bg-slate-800 px-3 py-1.5 rounded text-sm">Ver Voucher</a>
+                    <button onclick="approve({{ tx.id }})" class="bg-emerald-600 text-white px-3 py-1.5 rounded text-sm font-bold">Aprobar (+5 Cr)</button>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not txs %}
+            <p class="text-slate-500">No hay pagos pendientes.</p>
+            {% endif %}
         </div>
     </div>
-
     <script>
-        async function resolveTx(txId, action) {
-            if(!confirm('¿Seguro de ' + (action==='approved'?'aprobar':'rechazar') + ' esta transacción?')) return;
-            try {
-                const res = await fetch(`/admin/tx/${txId}/${action}`, { method: 'POST' });
-                if(res.ok) {
-                    document.getElementById('tx-' + txId).remove();
-                }
-            } catch(e) { alert("Error"); }
+        async function approve(id) {
+            await fetch(`/api/approve/${id}`, {method: 'POST'});
+            document.getElementById(`tx-${id}`).remove();
         }
     </script>
 </body>
