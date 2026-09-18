@@ -27,7 +27,6 @@ def create_or_update_user(email: str, name: str, default_role: str):
     with get_db() as db:
         user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         if not user:
-            # 1 crédito gratis de bienvenida
             db.execute("INSERT INTO users (email, name, role, credits) VALUES (?, ?, ?, ?)", (email, name, default_role, 1))
             db.commit()
             return {"email": email, "name": name, "role": default_role, "credits": 1}

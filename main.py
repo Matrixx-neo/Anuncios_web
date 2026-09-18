@@ -48,6 +48,7 @@ def get_gemini_model():
         keys = [os.getenv("GEMINI_API_KEY").strip()]
     if keys:
         genai.configure(api_key=keys[0])
+        # Usamos flash que es rápido y soporta visión (multimodal)
         return genai.GenerativeModel("gemini-1.5-flash")
     return None
 
@@ -58,14 +59,13 @@ async def scrape_url(url: str):
             if resp.status_code == 200:
                 soup = BeautifulSoup(resp.text, "html.parser")
                 for s in soup(["script", "style", "nav", "footer"]): s.extract()
-                return " ".join(soup.get_text().split())[:600]
+                return " ".join(soup.get_text().split())[:800]
     except Exception:
         pass
     return url
 
 @app.get("/auth/login")
 async def login(request: Request):
-    # SOLUCIÓN QUIRÚRGICA AL ERROR 400: URL HARDCODEADA
     redirect_uri = "https://anuncios-web-c4bv.onrender.com/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -80,7 +80,6 @@ async def auth_callback(request: Request):
         request.session['user'] = db_user
         return RedirectResponse(url="/")
     except Exception as e:
-        print(f"OAuth Error: {e}")
         return RedirectResponse(url="/")
 
 @app.get("/auth/logout")
@@ -107,7 +106,7 @@ async def admin(request: Request):
 async def recharge(request: Request, receipt: UploadFile = File(...)):
     user = request.session.get('user')
     if not user:
-        return {"success": False, "error": "No has iniciado sesión"}
+        return {"success": False}
     path = f"uploads/{receipt.filename}"
     with open(path, "wb") as f:
         f.write(await receipt.read())
@@ -122,73 +121,76 @@ async def approve(request: Request, tx_id: int, credits: int = Form(...)):
         return {"success": True}
     return {"success": False}
 
-async def pipeline_generator(user, biz: str, comp: str, angle: str, photos_count: int):
-    yield f"data: {json.dumps({'type': 'log', 'msg': 'Extrayendo inteligencia de mercado...'})}\n\n"
+async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_files: list):
+    yield f"data: {json.dumps({'type': 'log', 'msg': 'Extrayendo inteligencia del mercado y analizando imágenes...'})}\n\n"
     await asyncio.sleep(0.5)
     
     biz_text = await scrape_url(biz) if re.match(r'^https?://', biz) else biz
     comp_text = await scrape_url(comp) if re.match(r'^https?://', comp) else comp
 
-    yield f"data: {json.dumps({'type': 'log', 'msg': 'Generando Matriz Comparativa con Inteligencia Artificial...'})}\n\n"
+    yield f"data: {json.dumps({'type': 'log', 'msg': 'Procesando Matriz FODA y copies con Inteligencia Artificial Multimodal...'})}\n\n"
     
-    # Prompt de Ingeniería para Gemini (Garantiza imágenes contextuales)
     prompt = f"""
-    Eres Director de Publicidad Estratégica. Genera un análisis agresivo.
-    - Negocio: {biz_text}
-    - Competidor: {comp_text}
-    - Enfoque opcional: {angle}
-    - El usuario subió {photos_count} fotos de referencia (toma esto en cuenta).
+    Eres un Director Creativo y Estratega de Marketing de clase mundial.
+    Analiza este negocio: '{biz_text}' y su competidor '{comp_text}'. Ángulo de campaña: '{angle}'.
+    IMPORTANTE SOBRE IMÁGENES: Si el usuario adjuntó imágenes (ej. hamburguesas, ropa, jabones), DEBES analizar qué son y adaptar los 'image_prompt' ESTRICTAMENTE a ese tipo de producto. No generes imágenes genéricas. Escribe los 'image_prompt' en INGLÉS como descripciones hiperrealistas para una IA de generación de imágenes.
 
-    Retorna SOLO un JSON válido con esta estructura estricta:
+    Devuelve ÚNICAMENTE un JSON con esta estructura exacta:
     {{
-        "title": "Campaña: Nombre Épico",
+        "title": "El Despertar del Ritual: TuMarca vs Competidor",
         "score": 85,
         "metrics": {{ "engagement": {{"tu": "88", "rival": "65"}}, "quality": {{"tu": "92", "rival": "70"}}, "freq": {{"tu": "60", "rival": "75"}} }},
         "rival_weaknesses": ["Debilidad 1", "Debilidad 2", "Debilidad 3"],
-        "attack_strategies": ["Ataque 1", "Ataque 2", "Ataque 3"],
-        "weekly_plan": {{"lunes": "Copy Lunes", "miercoles": "Copy Miercoles", "viernes": "Copy Viernes"}},
+        "attack_strategies": ["Estrategia 1", "Estrategia 2", "Estrategia 3"],
+        "weekly_plan": {{"lunes": "Copy Gancho", "miercoles": "Copy Valor", "viernes": "Copy Venta"}},
         "recommendations": "Recomendación experta",
-        "hashtags": "#Hashtag1 #Hashtag2",
+        "hashtags": "#Estrategia #Marketing",
         "carousel": [
-            {{"tag": "GANCHO", "headline": "Titular corto 1", "copy": "Subtítulo 1", "image_prompt": "Prompt en INGLÉS para generar una foto fotorrealista comercial y profesional de alta calidad sobre este negocio exacto (ej. macro shot of artisanal soap / delicious juicy burger...)"}},
-            {{"tag": "VALOR", "headline": "Titular corto 2", "copy": "Subtítulo 2", "image_prompt": "Prompt en INGLÉS detallando los beneficios visuales del producto del usuario"}},
-            {{"tag": "DIFERENCIADOR", "headline": "Titular corto 3", "copy": "Subtítulo 3", "image_prompt": "Prompt en INGLÉS mostrando el producto del usuario en uso o su textura"}},
-            {{"tag": "OFERTA", "headline": "Titular corto 4", "copy": "Subtítulo 4", "image_prompt": "Prompt en INGLÉS de un paquete o empaque premium del producto del usuario"}}
+            {{"tag": "GANCHO", "headline": "Titular 1", "copy": "Texto 1", "image_prompt": "english prompt describing the exact product from context, high quality commercial photography..."}},
+            {{"tag": "VALOR", "headline": "Titular 2", "copy": "Texto 2", "image_prompt": "english prompt focusing on ingredients/details of the exact product..."}},
+            {{"tag": "DIFERENCIADOR", "headline": "Titular 3", "copy": "Texto 3", "image_prompt": "english prompt showing the exact product in use or lifestyle..."}},
+            {{"tag": "OFERTA", "headline": "Titular 4", "copy": "Texto 4", "image_prompt": "english prompt showing a premium bundle or package of the exact product..."}}
         ]
     }}
     """
+    
+    # Preparar el payload multimodal (Texto + Fotos en base64/bytes)
+    contents = [prompt]
+    for file_data in uploaded_files:
+        contents.append({"mime_type": file_data["mime"], "data": file_data["bytes"]})
     
     model = get_gemini_model()
     data = None
     if model:
         try:
-            resp = await asyncio.to_thread(model.generate_content, prompt)
-            clean = resp.text.strip().replace("```json", "").replace("```", "")
-            data = json.loads(clean)
+            resp = await asyncio.to_thread(model.generate_content, contents)
+            match = re.search(r'\{.*\}', resp.text, re.DOTALL)
+            if match:
+                data = json.loads(match.group(0))
         except Exception as e:
             print(f"Gemini Error: {e}")
             pass
 
-    # Fallback de seguridad por si falla la API
+    # Fallback ultra-seguro por si Gemini colapsa
     if not data:
         data = {
-            "title": f"Dominio de Mercado: {biz_text[:15]}",
-            "score": 85,
-            "metrics": {"engagement": {"tu": "88", "rival": "65"}, "quality": {"tu": "92", "rival": "70"}, "freq": {"tu": "60", "rival": "75"}},
-            "rival_weaknesses": ["Atención lenta", "Calidad visual estándar", "Falta de valor agregado"],
-            "attack_strategies": ["Posicionar como premium", "Educar al cliente", "Asesoría 1 a 1"],
-            "weekly_plan": {"lunes": "Beneficio clave", "miercoles": "Testimonio", "viernes": "Cierre con escasez"},
-            "recommendations": "Usa colores contrastantes y copies directos atacando la fricción de compra.",
-            "hashtags": "#EstrategiaPremium #Crecimiento",
+            "title": f"Campaña de Dominio: {biz_text[:15]}",
+            "score": 75,
+            "metrics": {"engagement": {"tu": "85", "rival": "70"}, "quality": {"tu": "90", "rival": "65"}, "freq": {"tu": "50", "rival": "60"}},
+            "rival_weaknesses": ["Atención lenta al cliente", "Comunicación muy corporativa/fría", "Falta de valor educativo en sus redes"],
+            "attack_strategies": ["Posicionamiento como alternativa premium y cercana", "Educar al cliente sobre los beneficios técnicos", "Asesoría gratuita 1a1 para cerrar ventas"],
+            "weekly_plan": {"lunes": "¿Cansado de lo de siempre? Descubre la diferencia.", "miercoles": "Duelo de ingredientes: Por qué lo natural siempre gana.", "viernes": "Últimas unidades de nuestro pack de inicio."},
+            "recommendations": "Mantén una estética oscura y minimalista para transmitir autoridad.",
+            "hashtags": "#EstrategiaDigital #Crecimiento #Premium",
             "carousel": [
-                {"tag": "GANCHO", "headline": "¿Buscas algo mejor?", "copy": "Descubre la diferencia.", "image_prompt": f"macro commercial photography of {biz_text[:20]} premium quality"},
-                {"tag": "VALOR", "headline": "Máxima Calidad", "copy": "Hecho para destacar.", "image_prompt": f"aesthetic lifestyle showcase of {biz_text[:20]} natural lighting"},
-                {"tag": "DIFERENCIADOR", "headline": "Único en su tipo", "copy": "Resultados garantizados.", "image_prompt": f"high end luxury details of {biz_text[:20]} 8k resolution"},
-                {"tag": "OFERTA", "headline": "Llévalo Hoy", "copy": "Unidades limitadas.", "image_prompt": f"product bundle offer packaging of {biz_text[:20]} clean background"}
+                {"tag": "GANCHO", "headline": "¿Buscas algo mejor?", "copy": "Descubre la diferencia.", "image_prompt": f"macro commercial photography of {biz_text[:15]} highly detailed"},
+                {"tag": "VALOR", "headline": "Máxima Calidad", "copy": "Hecho para destacar.", "image_prompt": f"aesthetic lifestyle showcase of {biz_text[:15]} natural lighting"},
+                {"tag": "DIFERENCIADOR", "headline": "Único en su tipo", "copy": "Resultados garantizados.", "image_prompt": f"high end luxury details of {biz_text[:15]} 8k resolution"},
+                {"tag": "OFERTA", "headline": "Llévalo Hoy", "copy": "Unidades limitadas.", "image_prompt": f"product bundle offer packaging of {biz_text[:15]} clean background"}
             ]
         }
 
-    # TIEMPO 1: Enviar datos de texto GRATIS
+    # TIEMPO 1: Enviar datos de texto GRATIS al frontend
     strategy_payload = {k: v for k, v in data.items() if k != "carousel"}
     strategy_payload["type"] = "strategy"
     yield f"data: {json.dumps(strategy_payload)}\n\n"
@@ -201,8 +203,8 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, photos_count
         yield f"data: {json.dumps({'type': 'paywall'})}\n\n"
         return
 
-    # TIEMPO 2: Generar Imágenes Contextuales PRO
-    yield f"data: {json.dumps({'type': 'log', 'msg': 'Renderizando placas fotográficas basadas en tu negocio...'})}\n\n"
+    # TIEMPO 2: Generar Imágenes Pro (Polinations)
+    yield f"data: {json.dumps({'type': 'log', 'msg': 'Generando placas publicitarias en HD a partir del contexto...'})}\n\n"
     await asyncio.sleep(1.0)
 
     slides = []
@@ -212,7 +214,7 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, photos_count
             "tag": item["tag"],
             "headline": item["headline"],
             "copy": item["copy"],
-            "image_url": f"https://image.pollinations.ai/prompt/{img_prompt}?width=1080&height=1080&nologo=true"
+            "image_url": f"https://image.pollinations.ai/prompt/{img_prompt}?width=1080&height=1080&nologo=true&hd=true"
         })
     
     yield f"data: {json.dumps({'type': 'carousel', 'slides': slides})}\n\n"
@@ -230,10 +232,17 @@ async def generate(
     focus_angle: Optional[str] = Form(""),
     product_photos: List[UploadFile] = File(None)
 ):
-    # Contamos las fotos subidas para darle contexto a la IA
-    photos_count = len([p for p in product_photos if p.filename]) if product_photos else 0
+    # Procesar imágenes subidas para enviarlas al LLM Multimodal
+    uploaded_files = []
+    if product_photos:
+        for p in product_photos:
+            if p.filename:
+                file_bytes = await p.read()
+                if file_bytes:
+                    uploaded_files.append({"mime": p.content_type, "bytes": file_bytes})
+                    
     return StreamingResponse(
-        pipeline_generator(request.session.get('user'), business_input, competitor_input, focus_angle, photos_count),
+        pipeline_generator(request.session.get('user'), business_input, competitor_input, focus_angle, uploaded_files),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"}
     )
