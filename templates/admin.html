@@ -11,50 +11,64 @@
         .glass-card { background: #131B2F; border: 1px solid #1E293B; }
     </style>
 </head>
-<body class="p-6 min-h-screen flex flex-col items-center">
-    <div class="w-full max-w-5xl">
-        <div class="flex justify-between items-center mb-8 glass-card p-5 rounded-2xl">
-            <h1 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-shield-halved text-purple-500"></i> Panel de Administrador</h1>
-            <a href="/" class="text-sm font-bold text-purple-400 hover:text-white transition"><i class="fa-solid fa-arrow-left mr-1"></i> Volver a la App</a>
+<body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
+    <div class="w-full max-w-5xl space-y-8">
+        
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 glass-card p-6 rounded-3xl shadow-xl">
+            <h1 class="text-2xl font-black text-white flex items-center gap-3"><i class="fa-solid fa-shield-halved text-purple-500"></i> Panel de Administrador</h1>
+            <a href="/" class="text-sm font-bold bg-[#0B0F19] text-purple-400 border border-[#1E293B] px-5 py-2.5 rounded-xl hover:text-white transition"><i class="fa-solid fa-arrow-left mr-2"></i> Volver al Studio</a>
         </div>
         
-        <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4"><i class="fa-solid fa-file-invoice-dollar mr-1"></i> Vouchers Pendientes</h2>
-        <div class="space-y-4">
-            {% for tx in txs %}
-            <div class="glass-card p-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-5" id="tx-{{ tx.id }}">
-                <div class="flex items-center gap-4 w-full md:w-auto">
-                    <div class="w-10 h-10 bg-[#0B0F19] rounded-full flex items-center justify-center text-slate-500 border border-[#1E293B]">
-                        <i class="fa-solid fa-user"></i>
+        <!-- ASIGNACIÓN DIRECTA MANUAL -->
+        <div class="glass-card p-6 md:p-8 rounded-3xl shadow-xl">
+            <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-5 flex items-center gap-2"><i class="fa-solid fa-hand-holding-dollar text-emerald-500"></i> Asignación Manual Directa</h2>
+            <form id="manualAssignForm" class="flex flex-col md:flex-row gap-4">
+                <input type="email" name="email" placeholder="Correo electrónico del usuario" required class="flex-1 bg-[#0B0F19] border border-[#1E293B] rounded-xl p-4 text-sm text-white outline-none focus:border-purple-500">
+                <input type="number" name="credits" placeholder="Cantidad Créditos" required class="w-full md:w-48 bg-[#0B0F19] border border-[#1E293B] rounded-xl p-4 text-sm text-white outline-none focus:border-purple-500">
+                <button type="submit" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold px-8 py-4 rounded-xl transition uppercase tracking-widest text-sm shadow-lg shadow-purple-600/20">Asignar</button>
+            </form>
+        </div>
+
+        <!-- VOUCHERS PENDIENTES -->
+        <div class="glass-card p-6 md:p-8 rounded-3xl shadow-xl">
+            <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-5 flex items-center gap-2"><i class="fa-solid fa-file-invoice text-amber-500"></i> Vouchers Pendientes de Aprobación</h2>
+            <div class="space-y-5">
+                {% for tx in txs %}
+                <div class="bg-[#0B0F19] p-6 rounded-2xl border border-[#1E293B] flex flex-col lg:flex-row justify-between items-center gap-6" id="tx-{{ tx.id }}">
+                    <div class="flex items-center gap-4 w-full lg:w-auto">
+                        <div class="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center text-slate-500 border border-slate-800">
+                            <i class="fa-solid fa-user text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-white text-base">{{ tx.user_email }}</p>
+                            <p class="text-[11px] text-slate-500 font-mono">{{ tx.created_at }}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-bold text-white text-sm">{{ tx.user_email }}</p>
-                        <p class="text-[10px] text-slate-500 font-mono">{{ tx.created_at }}</p>
+                    
+                    <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                        <a href="{{ tx.receipt_path }}" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-3 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-700 w-full md:w-auto text-center justify-center">
+                            <i class="fa-solid fa-image text-purple-400"></i> Ver Voucher
+                        </a>
+                        <button onclick="approve({{ tx.id }}, 1)" class="bg-[#0B0F19] hover:bg-slate-800 text-slate-300 hover:text-white px-5 py-3 rounded-xl text-xs font-bold transition border border-slate-700 w-full md:w-auto">
+                            Starter (+1)
+                        </button>
+                        <button onclick="approve({{ tx.id }}, 5)" class="bg-purple-900/30 hover:bg-purple-600 text-purple-300 hover:text-white px-5 py-3 rounded-xl text-xs font-bold transition border border-purple-500/50 w-full md:w-auto">
+                            Emprendedor (+5)
+                        </button>
+                        <button onclick="approve({{ tx.id }}, 15)" class="bg-amber-900/30 hover:bg-amber-600 text-amber-500 hover:text-white px-5 py-3 rounded-xl text-xs font-bold transition border border-amber-500/50 w-full md:w-auto">
+                            PRO (+15)
+                        </button>
                     </div>
                 </div>
+                {% endfor %}
                 
-                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    <a href="{{ tx.receipt_path }}" target="_blank" class="bg-[#0B0F19] hover:bg-slate-800 text-white px-4 py-3 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-[#1E293B]">
-                        <i class="fa-solid fa-image text-purple-400"></i> Ver Voucher
-                    </a>
-                    <button onclick="approve({{ tx.id }}, 1)" class="bg-[#0B0F19] hover:bg-slate-700 text-slate-300 hover:text-white px-4 py-3 rounded-xl text-xs font-bold transition border border-slate-700">
-                        Starter (+1)
-                    </button>
-                    <button onclick="approve({{ tx.id }}, 5)" class="bg-purple-900/30 hover:bg-purple-600 text-purple-300 hover:text-white px-4 py-3 rounded-xl text-xs font-bold transition border border-purple-500/50">
-                        Emprendedor (+5)
-                    </button>
-                    <button onclick="approve({{ tx.id }}, 15)" class="bg-amber-900/30 hover:bg-amber-600 text-amber-500 hover:text-white px-4 py-3 rounded-xl text-xs font-bold transition border border-amber-500/50">
-                        PRO (+15)
-                    </button>
+                {% if not txs %}
+                <div class="text-center p-14 bg-[#0B0F19] rounded-3xl border border-[#1E293B] border-dashed">
+                    <i class="fa-solid fa-clipboard-check text-5xl text-emerald-500/50 mb-4"></i>
+                    <p class="text-slate-400 font-bold text-lg">Todo al día. No hay pagos pendientes.</p>
                 </div>
+                {% endif %}
             </div>
-            {% endfor %}
-            
-            {% if not txs %}
-            <div class="text-center p-12 glass-card rounded-3xl border-dashed">
-                <i class="fa-solid fa-check-circle text-4xl text-slate-700 mb-4"></i>
-                <p class="text-slate-500 font-bold">Todo al día. No hay pagos pendientes.</p>
-            </div>
-            {% endif %}
         </div>
     </div>
     <script>
@@ -68,6 +82,17 @@
                 alert(`¡${credits} Créditos asignados con éxito!`);
             }
         }
+
+        document.getElementById('manualAssignForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch('/api/admin/assign', { method: 'POST', body: new FormData(e.target) });
+            if(res.ok) {
+                alert("¡Créditos asignados directamente con éxito!");
+                e.target.reset();
+            } else {
+                alert("Error al asignar créditos.");
+            }
+        });
     </script>
 </body>
 </html>

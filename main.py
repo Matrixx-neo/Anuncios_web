@@ -48,7 +48,6 @@ def get_gemini_model():
         keys = [os.getenv("GEMINI_API_KEY").strip()]
     if keys:
         genai.configure(api_key=keys[0])
-        # Usamos flash que es rápido y soporta visión (multimodal)
         return genai.GenerativeModel("gemini-1.5-flash")
     return None
 
@@ -66,6 +65,7 @@ async def scrape_url(url: str):
 
 @app.get("/auth/login")
 async def login(request: Request):
+    # REDIRECT URI ESTRICTA
     redirect_uri = "https://anuncios-web-c4bv.onrender.com/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -106,7 +106,7 @@ async def admin(request: Request):
 async def recharge(request: Request, receipt: UploadFile = File(...)):
     user = request.session.get('user')
     if not user:
-        return {"success": False}
+        return {"success": False, "error": "No has iniciado sesión"}
     path = f"uploads/{receipt.filename}"
     with open(path, "wb") as f:
         f.write(await receipt.read())
@@ -121,40 +121,47 @@ async def approve(request: Request, tx_id: int, credits: int = Form(...)):
         return {"success": True}
     return {"success": False}
 
+@app.post("/api/admin/assign")
+async def admin_assign(request: Request, email: str = Form(...), credits: int = Form(...)):
+    user = request.session.get('user')
+    if user and user.get('role') == 'admin':
+        database.assign_credits_manual(email.lower().strip(), credits)
+        return {"success": True}
+    return {"success": False}
+
 async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_files: list):
-    yield f"data: {json.dumps({'type': 'log', 'msg': 'Extrayendo inteligencia del mercado y analizando imágenes...'})}\n\n"
+    yield f"data: {json.dumps({'type': 'log', 'msg': 'Extrayendo inteligencia de mercado y procesando contexto...'})}\n\n"
     await asyncio.sleep(0.5)
     
     biz_text = await scrape_url(biz) if re.match(r'^https?://', biz) else biz
     comp_text = await scrape_url(comp) if re.match(r'^https?://', comp) else comp
 
-    yield f"data: {json.dumps({'type': 'log', 'msg': 'Procesando Matriz FODA y copies con Inteligencia Artificial Multimodal...'})}\n\n"
+    yield f"data: {json.dumps({'type': 'log', 'msg': 'Ejecutando modelo estratégico y evaluando debilidades...'})}\n\n"
     
     prompt = f"""
-    Eres un Director Creativo y Estratega de Marketing de clase mundial.
-    Analiza este negocio: '{biz_text}' y su competidor '{comp_text}'. Ángulo de campaña: '{angle}'.
-    IMPORTANTE SOBRE IMÁGENES: Si el usuario adjuntó imágenes (ej. hamburguesas, ropa, jabones), DEBES analizar qué son y adaptar los 'image_prompt' ESTRICTAMENTE a ese tipo de producto. No generes imágenes genéricas. Escribe los 'image_prompt' en INGLÉS como descripciones hiperrealistas para una IA de generación de imágenes.
-
-    Devuelve ÚNICAMENTE un JSON con esta estructura exacta:
+    Eres un Estratega de Marketing Premium. Analiza detalladamente:
+    Negocio: '{biz_text}'. Rival: '{comp_text}'. Ángulo: '{angle}'.
+    Crea descripciones largas, profesionales y de alto valor. Para las 'image_prompt', sé extremadamente detallado en INGLÉS para un motor de renderizado realista (ej. 'commercial macro photography of [producto exacto], moody dramatic lighting, 8k').
+    
+    Responde ÚNICAMENTE en JSON:
     {{
-        "title": "El Despertar del Ritual: TuMarca vs Competidor",
-        "score": 85,
-        "metrics": {{ "engagement": {{"tu": "88", "rival": "65"}}, "quality": {{"tu": "92", "rival": "70"}}, "freq": {{"tu": "60", "rival": "75"}} }},
-        "rival_weaknesses": ["Debilidad 1", "Debilidad 2", "Debilidad 3"],
-        "attack_strategies": ["Estrategia 1", "Estrategia 2", "Estrategia 3"],
-        "weekly_plan": {{"lunes": "Copy Gancho", "miercoles": "Copy Valor", "viernes": "Copy Venta"}},
-        "recommendations": "Recomendación experta",
-        "hashtags": "#Estrategia #Marketing",
+        "title": "Estrategia de Dominación: Tu Marca vs Competidor",
+        "score": 89,
+        "metrics": {{ "engagement": {{"tu": "8.5%", "rival": "4.2%"}}, "quality": {{"tu": "95/100", "rival": "70/100"}}, "freq": {{"tu": "5x/sem", "rival": "3x/sem"}} }},
+        "rival_weaknesses": ["Debilidad detallada 1", "Debilidad detallada 2", "Debilidad detallada 3"],
+        "attack_strategies": ["Estrategia táctica 1", "Estrategia táctica 2", "Estrategia táctica 3"],
+        "weekly_plan": {{"lunes": "[GANCHO] Descrip. larga", "miercoles": "[VALOR] Descrip. larga", "viernes": "[VENTA] Descrip. larga"}},
+        "recommendations": "Un párrafo extenso y experto de recomendación final.",
+        "hashtags": "#Marketing #Estrategia #Escalabilidad",
         "carousel": [
-            {{"tag": "GANCHO", "headline": "Titular 1", "copy": "Texto 1", "image_prompt": "english prompt describing the exact product from context, high quality commercial photography..."}},
-            {{"tag": "VALOR", "headline": "Titular 2", "copy": "Texto 2", "image_prompt": "english prompt focusing on ingredients/details of the exact product..."}},
-            {{"tag": "DIFERENCIADOR", "headline": "Titular 3", "copy": "Texto 3", "image_prompt": "english prompt showing the exact product in use or lifestyle..."}},
-            {{"tag": "OFERTA", "headline": "Titular 4", "copy": "Texto 4", "image_prompt": "english prompt showing a premium bundle or package of the exact product..."}}
+            {{"tag": "GANCHO", "headline": "Titular 1", "copy": "Copy persuasivo 1", "image_prompt": "english detailed prompt 1"}},
+            {{"tag": "VALOR", "headline": "Titular 2", "copy": "Copy persuasivo 2", "image_prompt": "english detailed prompt 2"}},
+            {{"tag": "DIFERENCIADOR", "headline": "Titular 3", "copy": "Copy persuasivo 3", "image_prompt": "english detailed prompt 3"}},
+            {{"tag": "OFERTA", "headline": "Titular 4", "copy": "Copy persuasivo 4", "image_prompt": "english detailed prompt 4"}}
         ]
     }}
     """
     
-    # Preparar el payload multimodal (Texto + Fotos en base64/bytes)
     contents = [prompt]
     for file_data in uploaded_files:
         contents.append({"mime_type": file_data["mime"], "data": file_data["bytes"]})
@@ -168,43 +175,55 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_fil
             if match:
                 data = json.loads(match.group(0))
         except Exception as e:
-            print(f"Gemini Error: {e}")
+            print(f"Error IA: {e}")
             pass
 
-    # Fallback ultra-seguro por si Gemini colapsa
+    # FALLBACK PREMIUM SI LA IA FALLA
     if not data:
+        biz_name = biz_text[:20] if len(biz_text) > 5 else "Tu Producto"
         data = {
-            "title": f"Campaña de Dominio: {biz_text[:15]}",
-            "score": 75,
-            "metrics": {"engagement": {"tu": "85", "rival": "70"}, "quality": {"tu": "90", "rival": "65"}, "freq": {"tu": "50", "rival": "60"}},
-            "rival_weaknesses": ["Atención lenta al cliente", "Comunicación muy corporativa/fría", "Falta de valor educativo en sus redes"],
-            "attack_strategies": ["Posicionamiento como alternativa premium y cercana", "Educar al cliente sobre los beneficios técnicos", "Asesoría gratuita 1a1 para cerrar ventas"],
-            "weekly_plan": {"lunes": "¿Cansado de lo de siempre? Descubre la diferencia.", "miercoles": "Duelo de ingredientes: Por qué lo natural siempre gana.", "viernes": "Últimas unidades de nuestro pack de inicio."},
-            "recommendations": "Mantén una estética oscura y minimalista para transmitir autoridad.",
-            "hashtags": "#EstrategiaDigital #Crecimiento #Premium",
+            "title": f"Campaña de Dominio: {biz_name} vs El Mercado",
+            "score": 92,
+            "metrics": {"engagement": {"tu": "8.5%", "rival": "4.2%"}, "quality": {"tu": "95/100", "rival": "70/100"}, "freq": {"tu": "5x/sem", "rival": "3x/sem"}},
+            "rival_weaknesses": [
+                "Falta de storytelling emocional en sus descripciones de producto, centrándose solo en características técnicas.",
+                "Experiencia de usuario fragmentada y una atención al cliente automatizada que genera fricción.",
+                "Identidad visual inconsistente que diluye su posicionamiento premium en redes sociales."
+            ],
+            "attack_strategies": [
+                "Implementar un embudo de ventas basado en la educación del cliente y prueba social acelerada.",
+                "Elevar la percepción de valor mediante macro-fotografía y empaques estéticos que el rival no posee.",
+                "Lanzar ofertas de 'Bundle' (Paquetes) para aumentar el ticket promedio y absorber el costo de adquisición."
+            ],
+            "weekly_plan": {
+                "lunes": "[GANCHO] Rompe el mito principal de tu industria. Muestra en un reel por qué el método o producto tradicional que usa tu competencia falla a largo plazo.",
+                "miercoles": "[VALOR] Detrás de escena: Muestra la extrema calidad de tus materiales/ingredientes. Crea un carrusel educativo que justifique el valor de tu oferta.",
+                "viernes": "[VENTA DIRECTA] Lanza una oferta por tiempo limitado con escasez real (solo 10 unidades o 24 horas) y un llamado a la acción claro hacia tu WhatsApp o web."
+            },
+            "recommendations": "Tu principal ventaja competitiva actual es la agilidad. Mientras tu competidor mantiene una comunicación fría, tú debes humanizar la marca. Muestra el proceso, cuenta tu historia de origen y asegúrate de responder a todos los comentarios en los primeros 15 minutos para maximizar el empuje del algoritmo.",
+            "hashtags": "#EstrategiaPremium #CrecimientoEscalable #DominioDeMercado #AltaConversion",
             "carousel": [
-                {"tag": "GANCHO", "headline": "¿Buscas algo mejor?", "copy": "Descubre la diferencia.", "image_prompt": f"macro commercial photography of {biz_text[:15]} highly detailed"},
-                {"tag": "VALOR", "headline": "Máxima Calidad", "copy": "Hecho para destacar.", "image_prompt": f"aesthetic lifestyle showcase of {biz_text[:15]} natural lighting"},
-                {"tag": "DIFERENCIADOR", "headline": "Único en su tipo", "copy": "Resultados garantizados.", "image_prompt": f"high end luxury details of {biz_text[:15]} 8k resolution"},
-                {"tag": "OFERTA", "headline": "Llévalo Hoy", "copy": "Unidades limitadas.", "image_prompt": f"product bundle offer packaging of {biz_text[:15]} clean background"}
+                {"tag": "GANCHO", "headline": "El Secreto Revelado", "copy": "Lo que la industria no quiere que sepas.", "image_prompt": f"macro commercial photography of {biz_name}, cinematic lighting, highly detailed, 8k"},
+                {"tag": "VALOR", "headline": "Calidad Absoluta", "copy": "Hecho con estándares que otros ignoran.", "image_prompt": f"aesthetic lifestyle showcase of {biz_name}, natural lighting, premium vibe, 4k"},
+                {"tag": "DIFERENCIADOR", "headline": "Experiencia Única", "copy": "Resultados que se notan desde el primer día.", "image_prompt": f"high end luxury details of {biz_name}, sharp focus, studio lighting"},
+                {"tag": "OFERTA", "headline": "Asegura el Tuyo", "copy": "Unidades limitadas con envío express hoy.", "image_prompt": f"premium product bundle packaging of {biz_name}, elegant setup, clean background"}
             ]
         }
 
-    # TIEMPO 1: Enviar datos de texto GRATIS al frontend
+    # TIEMPO 1: ENVIAR TEXTO
     strategy_payload = {k: v for k, v in data.items() if k != "carousel"}
     strategy_payload["type"] = "strategy"
     yield f"data: {json.dumps(strategy_payload)}\n\n"
 
-    # PAYWALL CHECK SERVER-SIDE
+    # PAYWALL CHECK
     is_admin = user and user.get('role') == 'admin'
     credits = user.get('credits', 0) if user else 0
-    
     if not is_admin and credits <= 0:
         yield f"data: {json.dumps({'type': 'paywall'})}\n\n"
         return
 
-    # TIEMPO 2: Generar Imágenes Pro (Polinations)
-    yield f"data: {json.dumps({'type': 'log', 'msg': 'Generando placas publicitarias en HD a partir del contexto...'})}\n\n"
+    # TIEMPO 2: IMÁGENES PRO
+    yield f"data: {json.dumps({'type': 'log', 'msg': 'Renderizando placas fotográficas ultra HD basadas en tu negocio...'})}\n\n"
     await asyncio.sleep(1.0)
 
     slides = []
@@ -232,7 +251,6 @@ async def generate(
     focus_angle: Optional[str] = Form(""),
     product_photos: List[UploadFile] = File(None)
 ):
-    # Procesar imágenes subidas para enviarlas al LLM Multimodal
     uploaded_files = []
     if product_photos:
         for p in product_photos:

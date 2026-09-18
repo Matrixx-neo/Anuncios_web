@@ -63,3 +63,13 @@ def approve_transaction(tx_id: int, credits_to_add: int):
             db.commit()
             return True
         return False
+
+def assign_credits_manual(email: str, credits_to_add: int):
+    with get_db() as db:
+        user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        if user:
+            db.execute("UPDATE users SET credits = credits + ? WHERE email = ?", (credits_to_add, email))
+        else:
+            db.execute("INSERT INTO users (email, name, role, credits) VALUES (?, ?, ?, ?)", (email, email.split('@')[0], 'user', credits_to_add))
+        db.commit()
+        return True
