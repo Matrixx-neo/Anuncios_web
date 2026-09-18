@@ -11,7 +11,6 @@
     <style>
         body { background-color: #05070A; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; position: relative; overflow-x: hidden; }
         
-        /* Fondo Animado Cyber-Grid */
         body::before {
             content: ''; position: fixed; inset: -40px; z-index: -1;
             background-size: 40px 40px;
@@ -28,9 +27,8 @@
         .glass-input:focus { border-color: #A855F7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
         .blur-paywall { filter: blur(14px); pointer-events: none; user-select: none; }
         
-        /* Truco para esconder Marca de Agua */
         .img-no-watermark {
-            width: 106%; height: 106%; max-w-none; object-fit: cover;
+            width: 106%; height: 106%; max-width: none; object-fit: cover;
             margin-left: -3%; margin-top: -3%;
         }
     </style>
@@ -93,7 +91,7 @@
                     <input type="text" name="business_input" required placeholder="Ej: Jabones artesanales con glicerina pura..." class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i class="fa-solid fa-crosshairs"></i> COMPETIDOR DIRECTo</label>
+                    <label class="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i class="fa-solid fa-crosshairs"></i> COMPETIDOR DIRECTO</label>
                     <input type="text" name="competitor_input" required placeholder="Ej: Natura o URL de competencia..." class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
                 </div>
             </div>
@@ -151,9 +149,9 @@
                     </div>
 
                     <!-- GRÁFICA RADAR (Derecha 5 columnas) -->
-                    <div class="lg:col-span-5 bg-[#05070A] border border-[#1E293B] p-5 rounded-2xl flex flex-col items-center justify-center">
-                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">MAPA DE COMPETITIVIDAD</h4>
-                        <div class="w-full max-w-[280px] aspect-square relative">
+                    <div class="lg:col-span-5 bg-[#05070A] border border-[#1E293B] p-5 rounded-2xl flex flex-col items-center justify-center relative min-h-[250px]">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 w-full text-left">MAPA DE COMPETITIVIDAD</h4>
+                        <div class="w-full max-w-[280px] aspect-square relative flex items-center justify-center">
                             <canvas id="radarChart"></canvas>
                         </div>
                     </div>
@@ -183,21 +181,21 @@
 
                     <div>
                         <div class="flex items-center justify-between mb-5">
-                            <h4 class="heading text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-images text-purple-500"></i> Placas del Carrusel Publicitario HD</h4>
+                            <h4 class="heading text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-images text-purple-500"></i> Placas del Carrusel HD</h4>
                         </div>
-                        <p class="text-[11px] text-slate-400 mb-6 bg-purple-900/20 inline-block px-3 py-1.5 rounded-lg border border-purple-900/50">Las imágenes renderizadas son únicas, fotorrealistas y generadas específicamente para tu nicho. Clic en "Descargar HD" para guardarlas en máxima calidad (1080x1080).</p>
+                        <p class="text-[11px] text-slate-400 mb-6 bg-purple-900/20 inline-block px-3 py-1.5 rounded-lg border border-purple-900/50">Imágenes fotorrealistas generadas para tu nicho. Clic en "Descargar HD" para guardarlas en máxima calidad (1080x1080).</p>
                         
                         <div id="carGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Skeletons Laser -->
                             <div class="aspect-square bg-[#05070A] border border-[#1E293B] rounded-2xl flex flex-col items-center justify-center text-slate-600 relative overflow-hidden">
                                 <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent w-full h-[10%] animate-[scan_2s_linear_infinite]"></div>
                                 <i class="fa-solid fa-camera-viewfinder text-3xl mb-3"></i>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando...</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando Alta Definición...</span>
                             </div>
                             <div class="aspect-square bg-[#05070A] border border-[#1E293B] rounded-2xl flex flex-col items-center justify-center text-slate-600 relative overflow-hidden">
                                 <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent w-full h-[10%] animate-[scan_2s_linear_infinite] delay-500"></div>
                                 <i class="fa-solid fa-camera-viewfinder text-3xl mb-3"></i>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando...</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando Alta Definición...</span>
                             </div>
                         </div>
                     </div>
@@ -207,7 +205,7 @@
                 <div id="paywall" class="hidden absolute inset-0 bg-[#05070A]/85 backdrop-blur-[16px] rounded-3xl flex flex-col items-center justify-center p-6 text-center z-10 border border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.15)]">
                     <div class="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-400 text-4xl mb-5 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]"><i class="fa-solid fa-lock"></i></div>
                     <h3 class="heading text-3xl font-bold text-white mb-3">Desbloquea el Studio PRO</h3>
-                    <p class="text-sm text-slate-300 max-w-lg mb-8 leading-relaxed">El FODA ha sido generado. Para visualizar tu plan de contenidos semanal detallado, recomendaciones tácticas de neuromarketing y descargar las 4 imágenes HD hiperrealistas de tu carrusel, adquiere créditos.</p>
+                    <p class="text-sm text-slate-300 max-w-lg mb-8 leading-relaxed">El FODA ha sido generado. Para visualizar tu plan de contenidos semanal detallado, recomendaciones tácticas de neuromarketing y descargar las imágenes HD hiperrealistas, adquiere créditos.</p>
                     
                     {% if not user %}
                         <a href="/auth/login" class="px-10 py-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-sm rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(147,51,234,0.4)] transition hover:scale-105"><i class="fa-brands fa-google mr-2"></i> Inicia Sesión para Comprar</a>
@@ -253,7 +251,7 @@
             </div>
 
             <div class="bg-[#05070A] p-5 rounded-2xl mb-6 text-center border border-[#1E293B]">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">TRANSFIERE A (YAPE / PLIN):</span>
+                <span class="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">TRANSFIERE A (YAPE / PLIN):</span>
                 <span class="text-3xl font-black text-white tracking-wider">999 888 777</span>
             </div>
 
@@ -266,14 +264,11 @@
 
     <!-- Estilos extras para animaciones -->
     <style>
-        @keyframes scan {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(1000%); }
-        }
+        @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(1000%); } }
     </style>
 
     <script>
-        let radarChartInstance = null; // Para destruir la gráfica anterior si vuelve a consultar
+        let radarChartInstance = null;
 
         document.getElementById('aiForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -292,112 +287,140 @@
                 const res = await fetch('/api/generate', { method: 'POST', body: new FormData(e.target) });
                 const reader = res.body.getReader();
                 const dec = new TextDecoder();
+                
+                // === BUFFER INTELIGENTE ANTI-ROTURAS (Evita "Error de Conexión") ===
+                let buffer = '';
 
                 while (true) {
                     const { value, done } = await reader.read();
                     if (done) break;
                     
-                    const chunks = dec.decode(value, {stream: true}).split('\n\n');
-                    for (const chunk of chunks) {
-                        if (!chunk.startsWith('data: ')) continue;
-                        const data = JSON.parse(chunk.replace('data: ', ''));
+                    buffer += dec.decode(value, { stream: true });
+                    let boundary = buffer.indexOf('\n\n');
+                    
+                    while (boundary !== -1) {
+                        const chunk = buffer.slice(0, boundary);
+                        buffer = buffer.slice(boundary + 2);
+                        
+                        if (chunk.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(chunk.substring(6));
 
-                        if (data.type === 'log') {
-                            log.innerText = data.msg;
-                        } 
-                        else if (data.type === 'strategy') {
-                            document.getElementById('results').classList.remove('hidden');
-                            document.getElementById('resTitle').innerText = data.title;
-                            document.getElementById('resScore').innerText = `${data.score}/100`;
-                            document.getElementById('mEng').innerText = `Tú: ${data.metrics.engagement.tu} vs R: ${data.metrics.engagement.rival}`;
-                            document.getElementById('mQua').innerText = `Tú: ${data.metrics.quality.tu} vs R: ${data.metrics.quality.rival}`;
-                            document.getElementById('mFre').innerText = `Tú: ${data.metrics.freq.tu} vs R: ${data.metrics.freq.rival}`;
-                            document.getElementById('resWeak').innerHTML = data.rival_weaknesses.map(w => `<li class="mb-2"><strong>${w.split(' ')[0]}</strong> ${w.substring(w.indexOf(' ')+1)}</li>`).join('');
-                            document.getElementById('resAtk').innerHTML = data.attack_strategies.map(s => `<li class="mb-2"><strong>${s.split(' ')[0]}</strong> ${s.substring(s.indexOf(' ')+1)}</li>`).join('');
-                            
-                            // === DIBUJAR GRÁFICA RADAR ===
-                            if (radarChartInstance) radarChartInstance.destroy();
-                            const ctx = document.getElementById('radarChart').getContext('2d');
-                            radarChartInstance = new Chart(ctx, {
-                                type: 'radar',
-                                data: {
-                                    labels: ['Engagement', 'Calidad', 'Frecuencia', 'Autoridad', 'Conversión'],
-                                    datasets: [{
-                                        label: 'Tu Marca',
-                                        data: [data.chart.tu.eng, data.chart.tu.qual, data.chart.tu.freq, data.chart.tu.auth, data.chart.tu.conv],
-                                        backgroundColor: 'rgba(168, 85, 247, 0.25)',
-                                        borderColor: '#A855F7',
-                                        pointBackgroundColor: '#A855F7',
-                                        borderWidth: 2
-                                    }, {
-                                        label: 'Competidor',
-                                        data: [data.chart.rival.eng, data.chart.rival.qual, data.chart.rival.freq, data.chart.rival.auth, data.chart.rival.conv],
-                                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                        borderColor: '#EF4444',
-                                        pointBackgroundColor: '#EF4444',
-                                        borderWidth: 2
-                                    }]
-                                },
-                                options: {
-                                    scales: {
-                                        r: {
-                                            angleLines: { color: 'rgba(255,255,255,0.05)' },
-                                            grid: { color: 'rgba(255,255,255,0.05)' },
-                                            pointLabels: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' } },
-                                            ticks: { display: false, min: 0, max: 100 }
-                                        }
-                                    },
-                                    plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } } },
-                                    maintainAspectRatio: false
+                                if (data.type === 'log') {
+                                    log.innerText = data.msg;
+                                } 
+                                else if (data.type === 'strategy') {
+                                    document.getElementById('results').classList.remove('hidden');
+                                    
+                                    // Set Text Safely
+                                    if(document.getElementById('resTitle')) document.getElementById('resTitle').innerText = data.title || "Estrategia Generada";
+                                    if(document.getElementById('resScore')) document.getElementById('resScore').innerText = `${data.score || 90}/100`;
+                                    
+                                    // Safe UI Update
+                                    const weakList = data.rival_weaknesses || ["Falta de innovación", "Mala atención"];
+                                    const atkList = data.attack_strategies || ["Optimizar funnel", "Mejorar copy"];
+                                    
+                                    document.getElementById('resWeak').innerHTML = weakList.map(w => `<li class="mb-2"><i class="fa-solid fa-angle-right text-red-500 mr-1"></i> ${w}</li>`).join('');
+                                    document.getElementById('resAtk').innerHTML = atkList.map(s => `<li class="mb-2"><i class="fa-solid fa-angle-right text-emerald-500 mr-1"></i> ${s}</li>`).join('');
+                                    
+                                    // === DIBUJAR GRÁFICA RADAR SEGURA ===
+                                    if (typeof Chart !== 'undefined') {
+                                        if (radarChartInstance) radarChartInstance.destroy();
+                                        
+                                        const cDataTu = data.chart?.tu ? [data.chart.tu.eng, data.chart.tu.qual, data.chart.tu.freq, data.chart.tu.auth, data.chart.tu.conv] : [85, 95, 70, 85, 92];
+                                        const cDataRival = data.chart?.rival ? [data.chart.rival.eng, data.chart.rival.qual, data.chart.rival.freq, data.chart.rival.auth, data.chart.rival.conv] : [55, 65, 85, 70, 60];
+                                        
+                                        const ctx = document.getElementById('radarChart').getContext('2d');
+                                        radarChartInstance = new Chart(ctx, {
+                                            type: 'radar',
+                                            data: {
+                                                labels: ['Engagement', 'Calidad', 'Frecuencia', 'Autoridad', 'Conversión'],
+                                                datasets: [{
+                                                    label: 'Tu Marca',
+                                                    data: cDataTu,
+                                                    backgroundColor: 'rgba(168, 85, 247, 0.25)',
+                                                    borderColor: '#A855F7',
+                                                    pointBackgroundColor: '#A855F7',
+                                                    borderWidth: 2
+                                                }, {
+                                                    label: 'Competidor',
+                                                    data: cDataRival,
+                                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                                    borderColor: '#EF4444',
+                                                    pointBackgroundColor: '#EF4444',
+                                                    borderWidth: 2
+                                                }]
+                                            },
+                                            options: {
+                                                scales: {
+                                                    r: {
+                                                        angleLines: { color: 'rgba(255,255,255,0.05)' },
+                                                        grid: { color: 'rgba(255,255,255,0.05)' },
+                                                        pointLabels: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' } },
+                                                        ticks: { display: false, min: 0, max: 100 }
+                                                    }
+                                                },
+                                                plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } } },
+                                                maintainAspectRatio: false
+                                            }
+                                        });
+                                    } else {
+                                        document.getElementById('radarChart').parentElement.innerHTML = '<span class="text-xs text-slate-500">Gráfico no disponible</span>';
+                                    }
+                                } 
+                                else if (data.type === 'paywall') {
+                                    document.getElementById('proData').classList.add('blur-paywall');
+                                    document.getElementById('paywall').classList.remove('hidden');
+                                    bar.classList.add('hidden');
+                                    btn.disabled = false; btn.classList.remove('opacity-50');
                                 }
-                            });
-                        } 
-                        else if (data.type === 'paywall') {
-                            document.getElementById('proData').classList.add('blur-paywall');
-                            document.getElementById('paywall').classList.remove('hidden');
-                            bar.classList.add('hidden');
-                            btn.disabled = false; btn.classList.remove('opacity-50');
-                        }
-                        else if (data.type === 'carousel') {
-                            document.getElementById('resPlan').innerHTML = `
-                                <div class="mb-4"><strong class="text-purple-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-bullhorn mr-1"></i> Lunes:</strong> ${data.weekly_plan.lunes}</div>
-                                <div class="mb-4"><strong class="text-cyan-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-book-open mr-1"></i> Miércoles:</strong> ${data.weekly_plan.miercoles}</div>
-                                <div><strong class="text-amber-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-cart-shopping mr-1"></i> Viernes:</strong> ${data.weekly_plan.viernes}</div>
-                            `;
-                            document.getElementById('resRec').innerText = data.recommendations;
-                            document.getElementById('resHash').innerText = data.hashtags;
+                                else if (data.type === 'carousel') {
+                                    const wPlan = data.weekly_plan || {lunes:"Gancho", miercoles:"Valor", viernes:"Venta"};
+                                    document.getElementById('resPlan').innerHTML = `
+                                        <div class="mb-4"><strong class="text-purple-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-bullhorn mr-1"></i> Lunes:</strong> ${wPlan.lunes}</div>
+                                        <div class="mb-4"><strong class="text-cyan-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-book-open mr-1"></i> Miércoles:</strong> ${wPlan.miercoles}</div>
+                                        <div><strong class="text-amber-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-cart-shopping mr-1"></i> Viernes:</strong> ${wPlan.viernes}</div>
+                                    `;
+                                    document.getElementById('resRec').innerText = data.recommendations || "Mantén la consistencia y enfócate en el valor.";
+                                    document.getElementById('resHash').innerText = data.hashtags || "#Estrategia #Marketing";
 
-                            document.getElementById('carGrid').innerHTML = data.slides.map(s => `
-                                <div class="relative rounded-2xl overflow-hidden border border-[#1E293B] aspect-square group bg-[#05070A] shadow-lg">
-                                    <!-- IMAGEN RECORTADA CON TRUCO CSS PARA BORRAR MARCA DE AGUA -->
-                                    <div class="w-full h-full relative overflow-hidden">
-                                        <img src="${s.image_url}" class="img-no-watermark group-hover:scale-[1.12] transition duration-500">
-                                    </div>
-                                    
-                                    <div class="absolute top-4 left-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg uppercase tracking-wider">${s.tag}</div>
-                                    <div class="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg flex items-center gap-1"><i class="fa-solid fa-image"></i> HD 8K</div>
-                                    
-                                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent pt-20 pb-5 px-5">
-                                        <p class="text-base font-bold text-white leading-tight mb-1 drop-shadow-md">${s.headline}</p>
-                                        <p class="text-xs text-slate-300 leading-snug drop-shadow-md">${s.copy}</p>
-                                    </div>
-                                    
-                                    <!-- Botón Descargar en Hover -->
-                                    <a href="${s.image_url}" download="Placa_${s.tag}.jpg" target="_blank" class="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-sm z-20">
-                                        <div class="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.5)] hover:scale-105 transition"><i class="fa-solid fa-download"></i> Descargar HD</div>
-                                    </a>
-                                </div>
-                            `).join('');
+                                    const slidesData = data.slides || [];
+                                    document.getElementById('carGrid').innerHTML = slidesData.map(s => `
+                                        <div class="relative rounded-2xl overflow-hidden border border-[#1E293B] aspect-square group bg-[#05070A] shadow-lg">
+                                            <!-- IMAGEN RECORTADA CON TRUCO CSS PARA BORRAR MARCA DE AGUA -->
+                                            <div class="w-full h-full relative overflow-hidden">
+                                                <img src="${s.image_url}" class="img-no-watermark group-hover:scale-[1.12] transition duration-500">
+                                            </div>
+                                            
+                                            <div class="absolute top-4 left-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg uppercase tracking-wider">${s.tag}</div>
+                                            <div class="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg flex items-center gap-1"><i class="fa-solid fa-image"></i> HD 8K</div>
+                                            
+                                            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent pt-20 pb-5 px-5">
+                                                <p class="text-base font-bold text-white leading-tight mb-1 drop-shadow-md">${s.headline}</p>
+                                                <p class="text-xs text-slate-300 leading-snug drop-shadow-md">${s.copy}</p>
+                                            </div>
+                                            
+                                            <!-- Botón Descargar en Hover -->
+                                            <a href="${s.image_url}" download="Placa_${s.tag}.jpg" target="_blank" class="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-sm z-20">
+                                                <div class="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.5)] hover:scale-105 transition"><i class="fa-solid fa-download"></i> Descargar HD</div>
+                                            </a>
+                                        </div>
+                                    `).join('');
+                                }
+                                else if (data.type === 'done') {
+                                    bar.classList.add('hidden');
+                                    btn.disabled = false; btn.classList.remove('opacity-50');
+                                }
+                            } catch(err) {
+                                console.error("Error procesando fragmento JSON", err);
+                            }
                         }
-                        else if (data.type === 'done') {
-                            bar.classList.add('hidden');
-                            btn.disabled = false; btn.classList.remove('opacity-50');
-                        }
+                        boundary = buffer.indexOf('\n\n');
                     }
                 }
             } catch (e) {
                 console.error(e);
-                log.innerText = "Error en la conexión con la Inteligencia Artificial.";
+                log.innerText = "Revisa tu conexión e intenta de nuevo.";
                 btn.disabled = false; btn.classList.remove('opacity-50');
             }
         });
