@@ -27,7 +27,7 @@
         .glass-input:focus { border-color: #A855F7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
         .blur-paywall { filter: blur(14px); pointer-events: none; user-select: none; }
         
-        /* TRUCO CSS ANTI-MARCA DE AGUA POLLINATIONS */
+        /* TRUCO CSS ANTI-MARCA DE AGUA VISUAL */
         .img-no-watermark {
             width: 106%; height: 106%; max-width: none; object-fit: cover;
             margin-left: -3%; margin-top: -3%;
@@ -83,7 +83,7 @@
                     <span class="text-[10px] font-black tracking-widest uppercase bg-purple-900/30 text-purple-400 px-4 py-1.5 rounded-full border border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]"><i class="fa-solid fa-rocket mr-2"></i> Prueba Gratuita Activa</span>
                 </div>
                 <h2 class="heading text-3xl md:text-4xl font-bold text-white mb-2">El motor creativo para tu crecimiento</h2>
-                <p class="text-sm text-slate-400">Describe tu producto y obtén la radiografía estratégica de tu mercado en segundos.</p>
+                <p class="text-sm text-slate-400">Describe tu producto o comparte una URL. Nuestra IA generará tu estrategia en segundos.</p>
             </div>
 
             <div class="grid md:grid-cols-2 gap-6">
@@ -93,17 +93,17 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i class="fa-solid fa-crosshairs"></i> COMPETIDOR DIRECTO</label>
-                    <input type="text" name="competitor_input" required placeholder="Ej: Marca comercial masiva..." class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
+                    <input type="text" name="competitor_input" required placeholder="Ej: Marca masiva comercial..." class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
                 </div>
             </div>
             <div class="grid md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ENFOQUE / ÁNGULO (OPCIONAL)</label>
-                    <input type="text" name="focus_angle" placeholder="Diferenciación de calidad y servicio..." class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
+                    <input type="text" name="focus_angle" placeholder="Diferenciación, Calidad Premium..." class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i class="fa-solid fa-camera"></i> FOTOS DEL PRODUCTO (OPCIONAL)</label>
-                    <input type="file" name="product_photos" multiple accept="image/*" class="w-full text-sm text-slate-400 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white file:font-bold hover:file:bg-purple-500 cursor-pointer border border-[#1E293B] rounded-xl p-1 bg-[#0B0F19]">
+                    <input type="file" id="photoInput" multiple accept="image/*" class="w-full text-sm text-slate-400 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white file:font-bold hover:file:bg-purple-500 cursor-pointer border border-[#1E293B] rounded-xl p-1 bg-[#0B0F19]">
                 </div>
             </div>
             
@@ -120,7 +120,6 @@
         </form>
 
         <div id="results" class="hidden space-y-6">
-            <!-- DASHBOARD GRATIS CON GRÁFICA DE RADAR -->
             <div class="glass-card p-6 md:p-8 rounded-3xl">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-slate-800/80 pb-6">
                     <div>
@@ -140,19 +139,19 @@
                         <div class="grid sm:grid-cols-2 gap-5">
                             <div class="bg-[#05070A] border border-red-900/30 p-5 rounded-2xl shadow-inner">
                                 <span class="flex items-center gap-2 text-[10px] font-bold text-red-500 uppercase mb-4"><i class="fa-solid fa-circle-dot"></i> DEBILIDADES DEL RIVAL</span>
-                                <ul id="resWeak" class="text-[12px] text-slate-300 space-y-4 list-disc pl-4 marker:text-red-900/50 leading-relaxed"></ul>
+                                <ul id="resWeak" class="text-[13px] text-slate-300 space-y-4 list-disc pl-4 marker:text-red-900/50 leading-relaxed"></ul>
                             </div>
                             <div class="bg-[#05070A] border border-emerald-900/30 p-5 rounded-2xl shadow-inner">
                                 <span class="flex items-center gap-2 text-[10px] font-bold text-emerald-400 uppercase mb-4"><i class="fa-solid fa-bolt text-emerald-500"></i> ESTRATEGIA DE ATAQUE</span>
-                                <ul id="resAtk" class="text-[12px] text-slate-300 space-y-4 list-disc pl-4 marker:text-emerald-900/50 leading-relaxed"></ul>
+                                <ul id="resAtk" class="text-[13px] text-slate-300 space-y-4 list-disc pl-4 marker:text-emerald-900/50 leading-relaxed"></ul>
                             </div>
                         </div>
                     </div>
 
                     <!-- GRÁFICA RADAR -->
-                    <div class="lg:col-span-5 bg-[#05070A] border border-[#1E293B] p-5 rounded-2xl flex flex-col items-center justify-center">
+                    <div class="lg:col-span-5 bg-[#05070A] border border-[#1E293B] p-5 rounded-2xl flex flex-col items-center justify-center relative min-h-[250px]">
                         <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 w-full text-left">MAPA DE COMPETITIVIDAD</h4>
-                        <div class="w-full max-w-[280px] aspect-square relative">
+                        <div class="w-full max-w-[280px] aspect-square relative flex items-center justify-center">
                             <canvas id="radarChart"></canvas>
                         </div>
                     </div>
@@ -171,41 +170,31 @@
                         <div class="space-y-6">
                             <div class="bg-[#05070A] p-5 rounded-2xl border border-[#1E293B]">
                                 <h4 class="text-[11px] font-extrabold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-lightbulb text-amber-500"></i> Recomendación Experta</h4>
-                                <p id="resRec" class="text-[13px] text-slate-300 leading-relaxed"></p>
+                                <p id="resRec" class="text-[13.5px] text-slate-300 leading-relaxed"></p>
                             </div>
                             <div class="bg-[#05070A] p-5 rounded-2xl border border-[#1E293B]">
                                 <h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2">HASHTAGS DE ALTO IMPACTO</h4>
-                                <p id="resHash" class="text-[12px] text-purple-400 font-mono font-bold tracking-wide leading-relaxed"></p>
+                                <p id="resHash" class="text-[13px] text-purple-400 font-mono font-bold tracking-wide leading-relaxed"></p>
                             </div>
                         </div>
                     </div>
 
                     <div>
                         <div class="flex items-center justify-between mb-5">
-                            <h4 class="heading text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-images text-purple-500"></i> Placas del Carrusel Publicitario HD</h4>
+                            <h4 class="heading text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-images text-purple-500"></i> Placas del Carrusel HD (Flux.1)</h4>
                         </div>
-                        <p class="text-[11px] text-slate-400 mb-6 bg-purple-900/20 inline-block px-3 py-1.5 rounded-lg border border-purple-900/50">Imágenes fotorrealistas generadas con parámetros de estudio. Clic en "Descargar HD" para guardarlas (1080x1080).</p>
+                        <p class="text-[11px] text-slate-400 mb-6 bg-purple-900/20 inline-block px-3 py-1.5 rounded-lg border border-purple-900/50">Imágenes fotorrealistas generadas con el motor Flux. Clic en "Descargar HD" para borrar la marca de agua y guardarlas en máxima calidad.</p>
                         
                         <div id="carGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="aspect-square bg-[#05070A] border border-[#1E293B] rounded-2xl flex flex-col items-center justify-center text-slate-600 relative overflow-hidden">
-                                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent w-full h-[10%] animate-[scan_2s_linear_infinite]"></div>
-                                <i class="fa-solid fa-camera-viewfinder text-3xl mb-3"></i>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando...</span>
-                            </div>
-                            <div class="aspect-square bg-[#05070A] border border-[#1E293B] rounded-2xl flex flex-col items-center justify-center text-slate-600 relative overflow-hidden">
-                                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent w-full h-[10%] animate-[scan_2s_linear_infinite] delay-500"></div>
-                                <i class="fa-solid fa-camera-viewfinder text-3xl mb-3"></i>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando...</span>
-                            </div>
+                            <!-- Los Skeletons se inyectan por JS -->
                         </div>
                     </div>
                 </div>
 
-                <!-- PAYWALL -->
                 <div id="paywall" class="hidden absolute inset-0 bg-[#05070A]/85 backdrop-blur-[16px] rounded-3xl flex flex-col items-center justify-center p-6 text-center z-10 border border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.15)]">
                     <div class="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-400 text-4xl mb-5 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]"><i class="fa-solid fa-lock"></i></div>
                     <h3 class="heading text-3xl font-bold text-white mb-3">Desbloquea el Studio PRO</h3>
-                    <p class="text-sm text-slate-300 max-w-lg mb-8 leading-relaxed">El FODA estratégico es tuyo. Para visualizar el plan de contenidos estructural, las recomendaciones de neuromarketing y generar las 4 imágenes HD ultra-realistas, adquiere créditos.</p>
+                    <p class="text-sm text-slate-300 max-w-lg mb-8 leading-relaxed">El FODA estratégico es tuyo. Para visualizar el plan de contenidos estructural, recomendaciones detalladas y generar las 4 imágenes HD ultra-realistas (Flux.1), adquiere créditos.</p>
                     
                     {% if not user %}
                         <a href="/auth/login" class="px-10 py-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-sm rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(147,51,234,0.4)] transition hover:scale-105"><i class="fa-brands fa-google mr-2"></i> Inicia Sesión para Comprar</a>
@@ -270,6 +259,114 @@
     <script>
         let radarChartInstance = null;
 
+        // COMPRESIÓN DE IMÁGENES EN EL FRONTEND (Soluciona crash de servidor y acelera la IA)
+        async function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; // Calidad suficiente para IA, peso mínimo
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob(blob => { 
+                            resolve(new File([blob], file.name, { type: 'image/jpeg' })); 
+                        }, 'image/jpeg', 0.8);
+                    }
+                }
+            });
+        }
+
+        // DESCARGA MÁGICA: DIBUJA EN CANVAS Y CORTA LA MARCA DE AGUA
+        window.downloadCleanImage = function(url, filename) {
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparando HD...';
+            
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = url;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                // RECORTA 40 PX DE ABAJO PARA ELIMINAR EL LOGO DE POLLINATIONS
+                canvas.height = img.height - 40; 
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                const link = document.createElement('a');
+                link.download = filename + ".jpg";
+                link.href = canvas.toDataURL('image/jpeg', 1.0);
+                link.click();
+                btn.innerHTML = originalHTML;
+            };
+            img.onerror = () => {
+                alert("Hubo un error al procesar la imagen de alta calidad.");
+                btn.innerHTML = originalHTML;
+            }
+        };
+
+        // CARGADOR SECUENCIAL (Para evitar el Error 429 de Pollinations)
+        async function loadImagesSequentially(slides) {
+            const grid = document.getElementById('carGrid');
+            
+            // Primero, inyectamos la estructura HTML con las imágenes ocultas (opacity-0) y un ID
+            grid.innerHTML = slides.map((s, i) => `
+                <div class="relative rounded-2xl overflow-hidden border border-[#1E293B] aspect-square group bg-[#05070A] shadow-lg">
+                    <!-- Spinner que se mostrará mientras carga -->
+                    <div id="spinner-${i}" class="absolute inset-0 flex flex-col items-center justify-center z-0">
+                        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent w-full h-[10%] animate-[scan_2s_linear_infinite]"></div>
+                        <i class="fa-solid fa-camera-retro text-4xl mb-3 text-purple-500/50"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando Tarjeta ${i+1}...</span>
+                    </div>
+                    
+                    <!-- Imagen real (Inicialmente oculta y sin SRC real) -->
+                    <img id="img-${i}" data-src="${s.image_url}" crossorigin="anonymous" class="img-no-watermark group-hover:scale-[1.12] transition duration-500 opacity-0 relative z-10">
+                    
+                    <div class="absolute top-4 left-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg uppercase tracking-wider z-20">${s.tag}</div>
+                    <div class="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg flex items-center gap-1 z-20"><i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> FLUX.1</div>
+                    
+                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent pt-24 pb-5 px-6 z-20">
+                        <p class="text-base font-bold text-white leading-tight mb-2 drop-shadow-md">${s.headline}</p>
+                        <p class="text-xs text-slate-300 leading-relaxed drop-shadow-md">${s.copy}</p>
+                    </div>
+                    
+                    <!-- Botón de Descarga Mágica -->
+                    <button type="button" onclick="downloadCleanImage('${s.image_url}', 'Placa_${s.tag}')" class="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-sm z-30">
+                        <div class="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.5)] hover:scale-105 transition"><i class="fa-solid fa-download"></i> Descargar HD sin Marca</div>
+                    </button>
+                </div>
+            `).join('');
+
+            // Bucle que pide una imagen, ESPERA a que cargue, y luego pide la siguiente
+            for (let i = 0; i < slides.length; i++) {
+                await new Promise((resolve) => {
+                    const img = document.getElementById(`img-${i}`);
+                    const spinner = document.getElementById(`spinner-${i}`);
+                    
+                    img.onload = () => {
+                        img.classList.remove('opacity-0');
+                        spinner.classList.add('hidden');
+                        // Pausa de 800ms antes de pedir la siguiente imagen a Pollinations
+                        setTimeout(resolve, 800); 
+                    };
+                    img.onerror = () => {
+                        spinner.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl mb-3"></i><span class="text-[10px]">Error al cargar</span>';
+                        resolve();
+                    };
+                    
+                    // Asignar el SRC real dispara la petición a la red
+                    img.src = img.getAttribute('data-src');
+                });
+            }
+        }
+
         document.getElementById('aiForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -282,13 +379,27 @@
             document.getElementById('results').classList.add('hidden');
             document.getElementById('proData').classList.remove('blur-paywall');
             document.getElementById('paywall').classList.add('hidden');
+            
+            log.innerText = "Preparando y comprimiendo archivos (si hay)...";
+
+            // COMPRESIÓN ACTIVA
+            const finalFormData = new FormData(e.target);
+            finalFormData.delete('product_photos'); 
+            const fileInput = document.getElementById('photoInput');
+            if (fileInput.files.length > 0) {
+                for (let file of fileInput.files) {
+                    const compressedFile = await compressImage(file);
+                    finalFormData.append('product_photos', compressedFile);
+                }
+            }
 
             try {
-                const res = await fetch('/api/generate', { method: 'POST', body: new FormData(e.target) });
+                log.innerText = "Conectando con el servidor...";
+                const res = await fetch('/api/generate', { method: 'POST', body: finalFormData });
                 const reader = res.body.getReader();
                 const dec = new TextDecoder();
                 
-                // === BUFFER INTELIGENTE ANTI-ROTURAS (Evita "Error de Conexión") ===
+                // === BUFFER INTELIGENTE ANTI-ROTURAS ===
                 let buffer = '';
 
                 while (true) {
@@ -312,18 +423,15 @@
                                 else if (data.type === 'strategy') {
                                     document.getElementById('results').classList.remove('hidden');
                                     
-                                    // Set Text Safely
                                     if(document.getElementById('resTitle')) document.getElementById('resTitle').innerText = data.title || "Estrategia Generada";
                                     if(document.getElementById('resScore')) document.getElementById('resScore').innerText = `${data.score || 90}/100`;
                                     
-                                    // Safe UI Update
                                     const weakList = data.rival_weaknesses || ["Falta de innovación visual", "Baja interacción con clientes"];
                                     const atkList = data.attack_strategies || ["Posicionar calidad premium", "Mejorar la prueba social"];
                                     
                                     document.getElementById('resWeak').innerHTML = weakList.map(w => `<li class="mb-3"><i class="fa-solid fa-angle-right text-red-500 mr-2"></i> ${w}</li>`).join('');
                                     document.getElementById('resAtk').innerHTML = atkList.map(s => `<li class="mb-3"><i class="fa-solid fa-angle-right text-emerald-500 mr-2"></i> ${s}</li>`).join('');
                                     
-                                    // === DIBUJAR GRÁFICA RADAR SEGURA ===
                                     if (typeof Chart !== 'undefined') {
                                         if (radarChartInstance) radarChartInstance.destroy();
                                         
@@ -384,28 +492,9 @@
                                     document.getElementById('resRec').innerText = data.recommendations || "Mantén la consistencia y enfócate en el valor. Responde rápido a los comentarios.";
                                     document.getElementById('resHash').innerText = data.hashtags || "#Estrategia #Marketing #VentasOnline";
 
+                                    // Llama al Cargador Secuencial y Mágico
                                     const slidesData = data.slides || [];
-                                    document.getElementById('carGrid').innerHTML = slidesData.map(s => `
-                                        <div class="relative rounded-2xl overflow-hidden border border-[#1E293B] aspect-square group bg-[#05070A] shadow-lg">
-                                            <!-- IMAGEN RECORTADA CON TRUCO CSS PARA BORRAR MARCA DE AGUA -->
-                                            <div class="w-full h-full relative overflow-hidden">
-                                                <img src="${s.image_url}" class="img-no-watermark group-hover:scale-[1.12] transition duration-500">
-                                            </div>
-                                            
-                                            <div class="absolute top-4 left-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg uppercase tracking-wider">${s.tag}</div>
-                                            <div class="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg flex items-center gap-1"><i class="fa-solid fa-image text-purple-400"></i> HD 8K</div>
-                                            
-                                            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent pt-24 pb-5 px-6">
-                                                <p class="text-base font-bold text-white leading-tight mb-2 drop-shadow-md">${s.headline}</p>
-                                                <p class="text-xs text-slate-300 leading-relaxed drop-shadow-md">${s.copy}</p>
-                                            </div>
-                                            
-                                            <!-- Botón Descargar en Hover -->
-                                            <a href="${s.image_url}" download="Placa_${s.tag}.jpg" target="_blank" class="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-sm z-20">
-                                                <div class="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.5)] hover:scale-105 transition"><i class="fa-solid fa-download"></i> Descargar HD</div>
-                                            </a>
-                                        </div>
-                                    `).join('');
+                                    loadImagesSequentially(slidesData);
                                 }
                                 else if (data.type === 'done') {
                                     bar.classList.add('hidden');
