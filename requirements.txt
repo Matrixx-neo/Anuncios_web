@@ -6,6 +6,7 @@ authlib
 itsdangerous
 httpx
 beautifulsoup4
+lxml
 requests
 jinja2
 python-multipart
