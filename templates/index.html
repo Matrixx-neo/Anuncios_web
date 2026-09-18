@@ -14,12 +14,11 @@
         .glass-input { background: #0B0F19; border: 1px solid #1E293B; }
         .glass-input:focus { border-color: #8B5CF6; box-shadow: 0 0 12px rgba(139, 92, 246, 0.3); }
         .blur-paywall { filter: blur(14px); pointer-events: none; user-select: none; }
-        .gradient-text { background: linear-gradient(to right, #C084FC, #8B5CF6); -webkit-background-clip: text; color: transparent; }
     </style>
 </head>
 <body class="p-3 md:p-6 flex flex-col items-center selection:bg-purple-500/30">
 
-    <header class="w-full max-w-5xl flex items-center justify-between py-3 border-b border-slate-800/80 mb-6">
+    <header class="w-full max-w-5xl flex flex-col md:flex-row items-center justify-between py-3 border-b border-slate-800/80 mb-6 gap-4 md:gap-0">
         <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <i class="fa-solid fa-cube text-white text-sm"></i>
@@ -33,10 +32,9 @@
         <div class="flex items-center gap-3">
             {% if user %}
                 {% if user.role == 'admin' %}
-                    <a href="/admin" class="hidden md:flex items-center gap-2 bg-purple-900/40 border border-purple-500/50 text-purple-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                    <a href="/admin" class="flex items-center gap-2 bg-purple-900/40 border border-purple-500/50 text-purple-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
                         <i class="fa-solid fa-shield-halved"></i> Panel Admin
                     </a>
-                    <a href="/admin" class="md:hidden text-purple-400 text-lg mr-2"><i class="fa-solid fa-shield-halved"></i></a>
                 {% endif %}
                 
                 <div class="flex items-center text-xs bg-[#131B2F] border border-slate-800 rounded-xl px-3 py-1.5 shadow-md">
@@ -47,7 +45,7 @@
                     {% else %}
                         <span class="text-slate-400 hidden md:block mr-3">{{ user.email }}</span>
                         <span class="text-purple-400 font-bold mr-3"><i class="fa-solid fa-coins mr-1"></i> {{ user.credits }} Cr</span>
-                        <button onclick="document.getElementById('modalRecharge').classList.remove('hidden')" class="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black px-2 py-1 rounded shadow-lg uppercase text-[9px] hover:scale-105 transition"><i class="fa-solid fa-plus"></i> Recargar</button>
+                        <button onclick="document.getElementById('modalRecharge').classList.remove('hidden')" class="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black px-3 py-1 rounded-md shadow-lg uppercase text-[9px] hover:scale-105 transition"><i class="fa-solid fa-plus mr-1"></i> Recargar</button>
                     {% endif %}
                     <a href="/auth/logout" class="text-slate-500 hover:text-red-400 ml-3 border-l border-slate-700 pl-3"><i class="fa-solid fa-power-off"></i></a>
                 </div>
@@ -66,7 +64,7 @@
                 <div class="inline-flex gap-3 mb-3">
                     <span class="text-[9px] font-bold tracking-widest uppercase bg-purple-950 text-purple-400 px-3 py-1 rounded-full border border-purple-800/50"><i class="fa-solid fa-rocket mr-1"></i> Prueba Gratuita Activa</span>
                 </div>
-                <h2 class="heading text-2xl font-bold text-white mb-1">El motor creativo para tu crecimiento</h2>
+                <h2 class="heading text-2xl md:text-3xl font-bold text-white mb-1">El motor creativo para tu crecimiento</h2>
             </div>
 
             <div class="grid md:grid-cols-2 gap-5">
@@ -82,11 +80,11 @@
             <div class="grid md:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">ENFOQUE / ÁNGULO (OPCIONAL)</label>
-                    <input type="text" name="focus_angle" placeholder="Comparativa" class="w-full glass-input p-3 rounded-xl text-xs text-white outline-none">
+                    <input type="text" name="focus_angle" placeholder="Comparativa de valor vs precio" class="w-full glass-input p-3.5 rounded-xl text-xs text-white outline-none">
                 </div>
                 <div>
                     <label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2"><i class="fa-solid fa-camera mr-1"></i> FOTOS DEL PRODUCTO (OPCIONAL)</label>
-                    <input type="file" name="product_photos" multiple accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white file:font-bold hover:file:bg-purple-500 cursor-pointer">
+                    <input type="file" name="product_photos" multiple accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white file:font-bold hover:file:bg-purple-500 cursor-pointer">
                 </div>
             </div>
             
@@ -114,7 +112,7 @@
 
                 <div class="mb-8">
                     <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-column text-slate-500"></i> COMPARATIVA TU MARCA VS COMPETIDOR</h4>
-                    <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                         <div class="bg-[#0B0F19] border border-[#1E293B] p-4 rounded-xl">
                             <span class="block text-[10px] font-bold text-slate-500 uppercase mb-1">ENGAGEMENT RATE</span>
                             <span id="mEng" class="text-sm font-black text-white">...</span>
@@ -133,12 +131,12 @@
                 <div class="mb-2">
                     <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-crosshairs text-slate-500"></i> MATRIZ FODA Y OPORTUNIDADES DE ATAQUE</h4>
                     <div class="grid md:grid-cols-2 gap-5">
-                        <div class="bg-[#0B0F19] border border-[#1E293B] p-5 rounded-xl">
-                            <span class="flex items-center gap-2 text-[10px] font-bold text-emerald-500 uppercase mb-3"><i class="fa-solid fa-circle-dot"></i> DEBILIDADES DEL RIVAL</span>
+                        <div class="bg-[#0B0F19] border border-[#1E293B] p-6 rounded-xl">
+                            <span class="flex items-center gap-2 text-[10px] font-bold text-emerald-500 uppercase mb-4"><i class="fa-solid fa-circle-dot"></i> DEBILIDADES DEL RIVAL</span>
                             <ul id="resWeak" class="text-[13px] text-slate-300 space-y-3 list-disc pl-4 marker:text-slate-600 leading-relaxed"></ul>
                         </div>
-                        <div class="bg-[#0B0F19] border border-[#1E293B] p-5 rounded-xl">
-                            <span class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase mb-3"><i class="fa-solid fa-xmark text-slate-500"></i> ESTRATEGIA DE ATAQUE</span>
+                        <div class="bg-[#0B0F19] border border-[#1E293B] p-6 rounded-xl">
+                            <span class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase mb-4"><i class="fa-solid fa-xmark text-slate-500"></i> ESTRATEGIA DE ATAQUE</span>
                             <ul id="resAtk" class="text-[13px] text-slate-300 space-y-3 list-disc pl-4 marker:text-slate-600 leading-relaxed"></ul>
                         </div>
                     </div>
@@ -170,9 +168,11 @@
                         <div class="flex items-center justify-between mb-5">
                             <h4 class="heading text-xl font-bold text-white">Placas del Carrusel Publicitario HD</h4>
                         </div>
-                        <p class="text-[11px] text-slate-500 mb-5">Las imágenes renderizadas están generadas específicamente para tu nicho. Clic en "Descargar HD" para guardarlas.</p>
+                        <p class="text-[11px] text-slate-500 mb-5">Las imágenes renderizadas están generadas específicamente para tu nicho. Clic en "Descargar HD" para guardarlas en calidad máxima.</p>
                         
                         <div id="carGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="aspect-square bg-[#0B0F19] border border-[#1E293B] rounded-xl flex items-center justify-center text-slate-600"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
+                            <div class="aspect-square bg-[#0B0F19] border border-[#1E293B] rounded-xl flex items-center justify-center text-slate-600"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
                             <div class="aspect-square bg-[#0B0F19] border border-[#1E293B] rounded-xl flex items-center justify-center text-slate-600"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
                             <div class="aspect-square bg-[#0B0F19] border border-[#1E293B] rounded-xl flex items-center justify-center text-slate-600"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
                         </div>
@@ -204,21 +204,21 @@
                 <div class="bg-[#0B0F19] border border-[#1E293B] p-4 rounded-xl flex justify-between items-center">
                     <div>
                         <span class="block text-sm font-bold text-white">Starter</span>
-                        <span class="text-[11px] text-slate-400">1 Crédito</span>
+                        <span class="text-[11px] text-slate-400">3 Créditos</span>
                     </div>
                     <span class="text-base font-black text-slate-300">S/ 10</span>
                 </div>
                 <div class="bg-purple-900/30 border border-purple-500 p-4 rounded-xl flex justify-between items-center shadow-lg shadow-purple-500/20">
                     <div>
                         <span class="block text-sm font-bold text-white">Emprendedor <span class="text-[9px] bg-purple-500 px-1.5 py-0.5 rounded ml-2 text-white">RECOMENDADO</span></span>
-                        <span class="text-[11px] text-purple-200">5 Créditos</span>
+                        <span class="text-[11px] text-purple-200">12 Créditos</span>
                     </div>
                     <span class="text-base font-black text-purple-400">S/ 35</span>
                 </div>
                 <div class="bg-[#0B0F19] border border-[#1E293B] p-4 rounded-xl flex justify-between items-center">
                     <div>
                         <span class="block text-sm font-bold text-white">PRO</span>
-                        <span class="text-[11px] text-slate-400">15 Créditos</span>
+                        <span class="text-[11px] text-slate-400">35 Créditos</span>
                     </div>
                     <span class="text-base font-black text-amber-400">S/ 90</span>
                 </div>
@@ -276,6 +276,15 @@
                             document.getElementById('mFre').innerText = `Tú: ${data.metrics.freq.tu} vs R: ${data.metrics.freq.rival}`;
                             document.getElementById('resWeak').innerHTML = data.rival_weaknesses.map(w => `<li>${w}</li>`).join('');
                             document.getElementById('resAtk').innerHTML = data.attack_strategies.map(s => `<li>${s}</li>`).join('');
+                            
+                            // SE ARREGLÓ EL MAPEO DE JS EXACTAMENTE A LO QUE MANDA PYTHON
+                            document.getElementById('resPlan').innerHTML = `
+                                <div class="mb-4"><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Lunes:</strong> ${data.weekly_plan.lunes}</div>
+                                <div class="mb-4"><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Miércoles:</strong> ${data.weekly_plan.miercoles}</div>
+                                <div><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Viernes:</strong> ${data.weekly_plan.viernes}</div>
+                            `;
+                            document.getElementById('resRec').innerText = data.recommendations;
+                            document.getElementById('resHash').innerText = data.hashtags;
                         } 
                         else if (data.type === 'paywall') {
                             document.getElementById('proData').classList.add('blur-paywall');
@@ -284,14 +293,6 @@
                             btn.disabled = false; btn.classList.remove('opacity-50');
                         }
                         else if (data.type === 'carousel') {
-                            document.getElementById('resPlan').innerHTML = `
-                                <div><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Lunes:</strong> ${data.plan.lunes}</div>
-                                <div><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Miércoles:</strong> ${data.plan.miercoles}</div>
-                                <div><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Viernes:</strong> ${data.plan.viernes}</div>
-                            `;
-                            document.getElementById('resRec').innerText = data.rec;
-                            document.getElementById('resHash').innerText = data.hash;
-
                             document.getElementById('carGrid').innerHTML = data.slides.map(s => `
                                 <div class="relative rounded-2xl overflow-hidden border border-[#1E293B] aspect-square group bg-[#0B0F19]">
                                     <img src="${s.image_url}" class="w-full h-full object-cover">
@@ -303,7 +304,6 @@
                                         <p class="text-xs text-slate-300 leading-snug">${s.copy}</p>
                                     </div>
                                     
-                                    <!-- Botón Descargar en Hover -->
                                     <a href="${s.image_url}" download="Placa_${s.tag}.jpg" target="_blank" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-sm">
                                         <div class="bg-purple-600 text-white px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-2xl hover:bg-purple-500 scale-95 group-hover:scale-100 transition"><i class="fa-solid fa-download"></i> Descargar HD</div>
                                     </a>
@@ -317,17 +317,23 @@
                     }
                 }
             } catch (e) {
-                log.innerText = "Error de conexión. Intenta de nuevo.";
+                console.error(e);
+                log.innerText = "Error en la conexión con la Inteligencia Artificial.";
                 btn.disabled = false; btn.classList.remove('opacity-50');
             }
         });
 
         document.getElementById('payForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await fetch('/api/recharge', { method: 'POST', body: new FormData(e.target) });
-            alert("¡Voucher enviado con éxito! Nuestro equipo lo validará y activará tus créditos.");
-            document.getElementById('modalRecharge').classList.add('hidden');
-            e.target.reset();
+            const formData = new FormData(e.target);
+            try {
+                await fetch('/api/recharge', { method: 'POST', body: formData });
+                alert("¡Voucher enviado con éxito! Nuestro equipo lo validará y activará tus créditos en breve.");
+                document.getElementById('modalRecharge').classList.add('hidden');
+                e.target.reset();
+            } catch (err) {
+                alert("Hubo un problema enviando el voucher. Intenta de nuevo.");
+            }
         });
     </script>
 </body>

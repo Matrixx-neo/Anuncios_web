@@ -53,7 +53,7 @@ def get_gemini_model():
 
 async def scrape_url(url: str):
     try:
-        async with httpx.AsyncClient(timeout=4.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
             resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
             if resp.status_code == 200:
                 soup = BeautifulSoup(resp.text, "html.parser")
@@ -65,7 +65,6 @@ async def scrape_url(url: str):
 
 @app.get("/auth/login")
 async def login(request: Request):
-    # REDIRECT URI ESTRICTA
     redirect_uri = "https://anuncios-web-c4bv.onrender.com/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -136,28 +135,33 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_fil
     biz_text = await scrape_url(biz) if re.match(r'^https?://', biz) else biz
     comp_text = await scrape_url(comp) if re.match(r'^https?://', comp) else comp
 
-    yield f"data: {json.dumps({'type': 'log', 'msg': 'Ejecutando modelo estratégico y evaluando debilidades...'})}\n\n"
+    yield f"data: {json.dumps({'type': 'log', 'msg': 'Procesando modelo estratégico avanzado con Gemini...'})}\n\n"
     
     prompt = f"""
-    Eres un Estratega de Marketing Premium. Analiza detalladamente:
-    Negocio: '{biz_text}'. Rival: '{comp_text}'. Ángulo: '{angle}'.
-    Crea descripciones largas, profesionales y de alto valor. Para las 'image_prompt', sé extremadamente detallado en INGLÉS para un motor de renderizado realista (ej. 'commercial macro photography of [producto exacto], moody dramatic lighting, 8k').
+    Eres un Consultor y Copywriter de Alto Nivel. Redacta un análisis premium extremadamente detallado, persuasivo y extenso.
+    Negocio del cliente: '{biz_text}'. Competidor: '{comp_text}'. Enfoque: '{angle}'.
     
-    Responde ÚNICAMENTE en JSON:
+    IMPORTANTE PARA 'image_prompt': Escribe los prompts en INGLÉS detallado. Si el cliente subió fotos, o menciona productos físicos (ej. comida, ropa, jabones), el prompt debe describir EXACTAMENTE ese producto usando términos como "high-end commercial macro photography of [producto exacto], cinematic studio lighting, 8k resolution". No uses textos genéricos.
+    
+    Responde ÚNICAMENTE en este JSON estricto:
     {{
-        "title": "Estrategia de Dominación: Tu Marca vs Competidor",
+        "title": "Campaña de Dominio: [Nombre] vs El Mercado",
         "score": 89,
         "metrics": {{ "engagement": {{"tu": "8.5%", "rival": "4.2%"}}, "quality": {{"tu": "95/100", "rival": "70/100"}}, "freq": {{"tu": "5x/sem", "rival": "3x/sem"}} }},
-        "rival_weaknesses": ["Debilidad detallada 1", "Debilidad detallada 2", "Debilidad detallada 3"],
-        "attack_strategies": ["Estrategia táctica 1", "Estrategia táctica 2", "Estrategia táctica 3"],
-        "weekly_plan": {{"lunes": "[GANCHO] Descrip. larga", "miercoles": "[VALOR] Descrip. larga", "viernes": "[VENTA] Descrip. larga"}},
-        "recommendations": "Un párrafo extenso y experto de recomendación final.",
-        "hashtags": "#Marketing #Estrategia #Escalabilidad",
+        "rival_weaknesses": ["Debilidad extensa y detallada 1", "Debilidad extensa y detallada 2", "Debilidad extensa y detallada 3"],
+        "attack_strategies": ["Estrategia táctica profunda 1", "Estrategia táctica profunda 2", "Estrategia táctica profunda 3"],
+        "weekly_plan": {{
+            "lunes": "Escribe 3-4 líneas detalladas con el enfoque del gancho para el lunes.",
+            "miercoles": "Escribe 3-4 líneas detalladas sobre el contenido de valor educativo para el miércoles.",
+            "viernes": "Escribe 3-4 líneas detalladas con el copy de venta agresiva y escasez para el viernes."
+        }},
+        "recommendations": "Redacta un párrafo extenso (5-6 líneas) con consejos expertos de marketing, neuromarketing y posicionamiento de marca.",
+        "hashtags": "#Marketing #Estrategia #Escalabilidad #Premium",
         "carousel": [
-            {{"tag": "GANCHO", "headline": "Titular 1", "copy": "Copy persuasivo 1", "image_prompt": "english detailed prompt 1"}},
-            {{"tag": "VALOR", "headline": "Titular 2", "copy": "Copy persuasivo 2", "image_prompt": "english detailed prompt 2"}},
-            {{"tag": "DIFERENCIADOR", "headline": "Titular 3", "copy": "Copy persuasivo 3", "image_prompt": "english detailed prompt 3"}},
-            {{"tag": "OFERTA", "headline": "Titular 4", "copy": "Copy persuasivo 4", "image_prompt": "english detailed prompt 4"}}
+            {{"tag": "GANCHO", "headline": "Titular de alto impacto", "copy": "Copy persuasivo de 2 líneas", "image_prompt": "english detailed prompt of the exact product"}},
+            {{"tag": "VALOR", "headline": "Titular de beneficio", "copy": "Copy persuasivo de 2 líneas", "image_prompt": "english detailed prompt showing ingredients or texture of the product"}},
+            {{"tag": "DIFERENCIADOR", "headline": "Titular de autoridad", "copy": "Copy persuasivo de 2 líneas", "image_prompt": "english detailed prompt showing the product in lifestyle use"}},
+            {{"tag": "OFERTA", "headline": "Llamado a la acción", "copy": "Copy persuasivo de cierre", "image_prompt": "english detailed prompt showing a premium bundle packaging of the product"}}
         ]
     }}
     """
@@ -178,35 +182,35 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_fil
             print(f"Error IA: {e}")
             pass
 
-    # FALLBACK PREMIUM SI LA IA FALLA
+    # FALLBACK PREMIUM ULTRADETALLADO (Se usa si Gemini demora o falla)
     if not data:
         biz_name = biz_text[:20] if len(biz_text) > 5 else "Tu Producto"
         data = {
-            "title": f"Campaña de Dominio: {biz_name} vs El Mercado",
+            "title": f"Plan de Expansión: {biz_name} vs La Competencia",
             "score": 92,
             "metrics": {"engagement": {"tu": "8.5%", "rival": "4.2%"}, "quality": {"tu": "95/100", "rival": "70/100"}, "freq": {"tu": "5x/sem", "rival": "3x/sem"}},
             "rival_weaknesses": [
-                "Falta de storytelling emocional en sus descripciones de producto, centrándose solo en características técnicas.",
-                "Experiencia de usuario fragmentada y una atención al cliente automatizada que genera fricción.",
-                "Identidad visual inconsistente que diluye su posicionamiento premium en redes sociales."
+                "Falta de storytelling emocional en sus descripciones de producto, centrándose exclusivamente en características técnicas que aburren al consumidor.",
+                "Experiencia de usuario fragmentada y una atención al cliente automatizada que genera fricción y abandono de carritos.",
+                "Identidad visual inconsistente que diluye su posicionamiento premium en redes sociales, compitiendo solo por precio."
             ],
             "attack_strategies": [
-                "Implementar un embudo de ventas basado en la educación del cliente y prueba social acelerada.",
-                "Elevar la percepción de valor mediante macro-fotografía y empaques estéticos que el rival no posee.",
-                "Lanzar ofertas de 'Bundle' (Paquetes) para aumentar el ticket promedio y absorber el costo de adquisición."
+                "Implementar un embudo de ventas basado en la educación del cliente, demostrando autoridad y construyendo prueba social acelerada.",
+                "Elevar la percepción de valor de tu marca mediante macro-fotografía y empaques estéticos que el rival no posee en su catálogo.",
+                "Lanzar ofertas de 'Bundle' (Paquetes) para aumentar radicalmente el ticket promedio de compra y absorber el costo de adquisición de clientes."
             ],
             "weekly_plan": {
-                "lunes": "[GANCHO] Rompe el mito principal de tu industria. Muestra en un reel por qué el método o producto tradicional que usa tu competencia falla a largo plazo.",
-                "miercoles": "[VALOR] Detrás de escena: Muestra la extrema calidad de tus materiales/ingredientes. Crea un carrusel educativo que justifique el valor de tu oferta.",
-                "viernes": "[VENTA DIRECTA] Lanza una oferta por tiempo limitado con escasez real (solo 10 unidades o 24 horas) y un llamado a la acción claro hacia tu WhatsApp o web."
+                "lunes": "[EL GANCHO] Rompe el mito principal de tu industria. Muestra en un reel corto de 7 segundos por qué el método o producto tradicional que usa tu competencia falla a largo plazo. Usa un audio en tendencia y texto grande.",
+                "miercoles": "[EL VALOR] Detrás de escena: Muestra la extrema calidad de tus materiales o ingredientes. Crea un carrusel educativo que justifique el valor de tu oferta, respondiendo a la objeción de precio antes de que el cliente la piense.",
+                "viernes": "[LA VENTA DIRECTA] Lanza una oferta irresistible por tiempo limitado con escasez real (solo 10 unidades o válido por 24 horas) y un llamado a la acción claro, dirigiéndolos hacia tu WhatsApp o tienda web."
             },
-            "recommendations": "Tu principal ventaja competitiva actual es la agilidad. Mientras tu competidor mantiene una comunicación fría, tú debes humanizar la marca. Muestra el proceso, cuenta tu historia de origen y asegúrate de responder a todos los comentarios en los primeros 15 minutos para maximizar el empuje del algoritmo.",
-            "hashtags": "#EstrategiaPremium #CrecimientoEscalable #DominioDeMercado #AltaConversion",
+            "recommendations": "Tu principal ventaja competitiva en este momento es la agilidad y el servicio. Mientras tu competidor mantiene una comunicación fría e institucional, tú debes humanizar la marca. Muestra el proceso, cuenta tu historia de origen con transparencia y asegúrate de responder a todos los comentarios en los primeros 15 minutos de publicación para maximizar el empuje del algoritmo en Instagram y TikTok. El mercado valora a las marcas auténticas.",
+            "hashtags": "#EstrategiaPremium #CrecimientoEscalable #DominioDeMercado #AltaConversion #MarcasConProposito",
             "carousel": [
-                {"tag": "GANCHO", "headline": "El Secreto Revelado", "copy": "Lo que la industria no quiere que sepas.", "image_prompt": f"macro commercial photography of {biz_name}, cinematic lighting, highly detailed, 8k"},
-                {"tag": "VALOR", "headline": "Calidad Absoluta", "copy": "Hecho con estándares que otros ignoran.", "image_prompt": f"aesthetic lifestyle showcase of {biz_name}, natural lighting, premium vibe, 4k"},
-                {"tag": "DIFERENCIADOR", "headline": "Experiencia Única", "copy": "Resultados que se notan desde el primer día.", "image_prompt": f"high end luxury details of {biz_name}, sharp focus, studio lighting"},
-                {"tag": "OFERTA", "headline": "Asegura el Tuyo", "copy": "Unidades limitadas con envío express hoy.", "image_prompt": f"premium product bundle packaging of {biz_name}, elegant setup, clean background"}
+                {"tag": "GANCHO", "headline": "El Secreto Revelado", "copy": "Lo que la industria tradicional no quiere que sepas sobre la verdadera calidad.", "image_prompt": f"macro commercial photography of {biz_name}, cinematic lighting, highly detailed, 8k resolution, elegant dark background"},
+                {"tag": "VALOR", "headline": "Calidad Absoluta", "copy": "Formulado y diseñado con estándares de grado superior que otros ignoran.", "image_prompt": f"aesthetic lifestyle showcase of {biz_name}, natural lighting, premium soft shadows, 4k"},
+                {"tag": "DIFERENCIADOR", "headline": "Experiencia Única", "copy": "Resultados tangibles que tus clientes notarán desde el primer día de uso.", "image_prompt": f"high end luxury details of {biz_name}, sharp focus, professional studio lighting, depth of field"},
+                {"tag": "OFERTA", "headline": "Asegura el Tuyo", "copy": "Unidades estrictamente limitadas con envío express garantizado para hoy.", "image_prompt": f"premium product bundle packaging of {biz_name}, elegant setup, clean sophisticated aesthetic"}
             ]
         }
 
