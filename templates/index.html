@@ -5,189 +5,214 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AdVance AI - Plataforma Estratégica</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0B0F19; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; }
+        body { background-color: #05070A; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; position: relative; overflow-x: hidden; }
+        
+        /* Fondo Animado Cyber-Grid */
+        body::before {
+            content: ''; position: fixed; inset: -40px; z-index: -1;
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(139, 92, 246, 0.04) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
+            animation: moveGrid 20s linear infinite;
+        }
+        @keyframes moveGrid { 0% { transform: translateY(0); } 100% { transform: translateY(40px); } }
+
         .heading { font-family: 'Space Grotesk', sans-serif; }
-        .glass-card { background: #131B2F; border: 1px solid #1E293B; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .glass-input { background: #0B0F19; border: 1px solid #1E293B; }
-        .glass-input:focus { border-color: #8B5CF6; box-shadow: 0 0 12px rgba(139, 92, 246, 0.3); }
+        .glass-card { background: rgba(13, 17, 28, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(139, 92, 246, 0.15); box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05); }
+        .glass-card:hover { border-color: rgba(139, 92, 246, 0.3); box-shadow: 0 10px 40px rgba(139, 92, 246, 0.1); }
+        .glass-input { background: rgba(5, 7, 10, 0.8); border: 1px solid rgba(139, 92, 246, 0.2); transition: all 0.3s ease; }
+        .glass-input:focus { border-color: #A855F7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
         .blur-paywall { filter: blur(14px); pointer-events: none; user-select: none; }
+        
+        /* Truco para esconder Marca de Agua */
+        .img-no-watermark {
+            width: 106%; height: 106%; max-w-none; object-fit: cover;
+            margin-left: -3%; margin-top: -3%;
+        }
     </style>
 </head>
 <body class="p-3 md:p-6 flex flex-col items-center selection:bg-purple-500/30">
 
-    <header class="w-full max-w-5xl flex flex-col md:flex-row items-center justify-between py-3 border-b border-slate-800/80 mb-6 gap-4 md:gap-0">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <i class="fa-solid fa-cube text-white text-sm"></i>
+    <header class="w-full max-w-5xl flex flex-col md:flex-row items-center justify-between py-3 border-b border-purple-900/30 mb-8 gap-4 md:gap-0 relative z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/40">
+                <i class="fa-solid fa-cube text-white text-lg"></i>
             </div>
             <div>
-                <h1 class="heading text-lg font-bold text-white leading-tight">AdVance <span class="text-purple-400">AI</span></h1>
-                <span class="text-[8px] tracking-widest text-slate-400 font-bold uppercase">PRO STUDIO</span>
+                <h1 class="heading text-xl font-bold text-white leading-tight">AdVance <span class="text-purple-400">AI</span></h1>
+                <span class="text-[9px] tracking-widest text-slate-400 font-bold uppercase block mt-0.5">El Ecosistema de Dominio Digital</span>
             </div>
         </div>
         
         <div class="flex items-center gap-3">
             {% if user %}
                 {% if user.role == 'admin' %}
-                    <a href="/admin" class="flex items-center gap-2 bg-purple-900/40 border border-purple-500/50 text-purple-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                    <a href="/admin" class="flex items-center gap-2 bg-purple-900/40 border border-purple-500/50 text-purple-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition">
                         <i class="fa-solid fa-shield-halved"></i> Panel Admin
                     </a>
                 {% endif %}
                 
-                <div class="flex items-center text-xs bg-[#131B2F] border border-slate-800 rounded-xl px-3 py-1.5 shadow-md">
+                <div class="flex items-center text-xs bg-[#0B0F19] border border-purple-900/50 rounded-xl px-3 py-1.5 shadow-md">
                     {% if user.role == 'admin' %}
                         <i class="fa-solid fa-bolt text-amber-400 mr-2"></i>
                         <span class="font-black text-amber-400 mr-2">∞ Ilimitado</span>
-                        <span class="bg-purple-600 text-[9px] font-black px-1.5 rounded text-white hidden md:inline">ADMIN</span>
+                        <span class="bg-purple-600 text-[9px] font-black px-1.5 py-0.5 rounded text-white hidden md:inline">ADMIN</span>
                     {% else %}
-                        <span class="text-slate-400 hidden md:block mr-3">{{ user.email }}</span>
-                        <span class="text-purple-400 font-bold mr-3"><i class="fa-solid fa-coins mr-1"></i> {{ user.credits }} Cr</span>
-                        <button onclick="document.getElementById('modalRecharge').classList.remove('hidden')" class="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black px-3 py-1 rounded-md shadow-lg uppercase text-[9px] hover:scale-105 transition"><i class="fa-solid fa-plus mr-1"></i> Recargar</button>
+                        <span class="text-slate-400 hidden md:block mr-3"><i class="fa-regular fa-user mr-1"></i> {{ user.email }}</span>
+                        <span class="text-purple-400 font-black mr-3 text-sm"><i class="fa-solid fa-coins mr-1"></i> {{ user.credits }}</span>
+                        <button onclick="document.getElementById('modalRecharge').classList.remove('hidden')" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black px-3 py-1.5 rounded-lg shadow-lg uppercase text-[10px] transition flex items-center"><i class="fa-solid fa-plus mr-1"></i> Recargar</button>
                     {% endif %}
-                    <a href="/auth/logout" class="text-slate-500 hover:text-red-400 ml-3 border-l border-slate-700 pl-3"><i class="fa-solid fa-power-off"></i></a>
+                    <a href="/auth/logout" class="text-slate-500 hover:text-red-400 ml-3 border-l border-slate-700 pl-3"><i class="fa-solid fa-power-off text-lg"></i></a>
                 </div>
             {% else %}
-                <a href="/auth/login" class="text-xs bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-5 rounded-xl flex items-center gap-2 transition shadow-lg shadow-purple-600/20">
+                <a href="/auth/login" class="text-xs bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition shadow-lg shadow-purple-600/30">
                     <i class="fa-brands fa-google"></i> Iniciar Sesión
                 </a>
             {% endif %}
         </div>
     </header>
 
-    <main class="w-full max-w-5xl space-y-6">
+    <main class="w-full max-w-5xl space-y-6 relative z-10">
         
-        <form id="aiForm" class="glass-card p-6 md:p-8 rounded-3xl space-y-5">
+        <form id="aiForm" class="glass-card p-6 md:p-8 rounded-3xl space-y-6 transition-all duration-300">
             <div class="text-center mb-6">
-                <div class="inline-flex gap-3 mb-3">
-                    <span class="text-[9px] font-bold tracking-widest uppercase bg-purple-950 text-purple-400 px-3 py-1 rounded-full border border-purple-800/50"><i class="fa-solid fa-rocket mr-1"></i> Prueba Gratuita Activa</span>
+                <div class="inline-flex gap-3 mb-4">
+                    <span class="text-[10px] font-black tracking-widest uppercase bg-purple-900/30 text-purple-400 px-4 py-1.5 rounded-full border border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]"><i class="fa-solid fa-rocket mr-2"></i> Prueba Gratuita Activa</span>
                 </div>
-                <h2 class="heading text-2xl md:text-3xl font-bold text-white mb-1">El motor creativo para tu crecimiento</h2>
+                <h2 class="heading text-3xl md:text-4xl font-bold text-white mb-2">El motor creativo para tu crecimiento</h2>
+                <p class="text-sm text-slate-400">Describe tu producto y obtén la radiografía estratégica de tu mercado en segundos.</p>
             </div>
 
-            <div class="grid md:grid-cols-2 gap-5">
+            <div class="grid md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-[10px] font-extrabold text-cyan-400 uppercase tracking-widest mb-2">TU NEGOCIO (URL O NOMBRE)</label>
-                    <input type="text" name="business_input" required placeholder="https://tuweb.com o Jabones artesanales..." class="w-full glass-input p-3.5 rounded-xl text-sm text-white outline-none">
+                    <label class="block text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i class="fa-solid fa-store"></i> TU NEGOCIO (URL O NOMBRE)</label>
+                    <input type="text" name="business_input" required placeholder="Ej: Jabones artesanales con glicerina pura..." class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-extrabold text-purple-400 uppercase tracking-widest mb-2">COMPETIDOR (URL O NOMBRE)</label>
-                    <input type="text" name="competitor_input" required placeholder="https://rival.com o Marca rival..." class="w-full glass-input p-3.5 rounded-xl text-sm text-white outline-none">
+                    <label class="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i class="fa-solid fa-crosshairs"></i> COMPETIDOR DIRECTo</label>
+                    <input type="text" name="competitor_input" required placeholder="Ej: Natura o URL de competencia..." class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
                 </div>
             </div>
-            <div class="grid md:grid-cols-2 gap-5">
+            <div class="grid md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">ENFOQUE / ÁNGULO (OPCIONAL)</label>
-                    <input type="text" name="focus_angle" placeholder="Comparativa de valor vs precio" class="w-full glass-input p-3.5 rounded-xl text-xs text-white outline-none">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ENFOQUE / ÁNGULO (OPCIONAL)</label>
+                    <input type="text" name="focus_angle" placeholder="Comparativa de valor vs precio" class="w-full glass-input p-4 rounded-xl text-sm text-white outline-none">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2"><i class="fa-solid fa-camera mr-1"></i> FOTOS DEL PRODUCTO (OPCIONAL)</label>
-                    <input type="file" name="product_photos" multiple accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white file:font-bold hover:file:bg-purple-500 cursor-pointer">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i class="fa-solid fa-camera"></i> FOTOS DEL PRODUCTO (OPCIONAL)</label>
+                    <input type="file" name="product_photos" multiple accept="image/*" class="w-full text-sm text-slate-400 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white file:font-bold hover:file:bg-purple-500 cursor-pointer border border-[#1E293B] rounded-xl p-1 bg-[#0B0F19]">
                 </div>
             </div>
             
-            <button type="submit" id="btnSubmit" class="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm rounded-xl uppercase tracking-widest transition shadow-lg shadow-purple-600/30">
-                <i class="fa-solid fa-bolt mr-2"></i> GENERAR ANÁLISIS Y CARRUSEL HD
+            <button type="submit" id="btnSubmit" class="w-full py-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm rounded-xl uppercase tracking-widest transition shadow-[0_0_20px_rgba(139,92,246,0.4)] flex justify-center items-center gap-2">
+                <i class="fa-solid fa-bolt text-amber-300"></i> GENERAR ANÁLISIS Y CARRUSEL HD
             </button>
             
-            <div id="loadingBar" class="hidden flex items-center justify-center gap-3 bg-[#0B0F19] border border-purple-500/50 p-4 rounded-xl mt-4">
-                <i class="fa-solid fa-circle-notch fa-spin text-purple-400 text-lg"></i>
-                <span id="logText" class="text-xs font-bold text-purple-300 uppercase tracking-wider">Iniciando motor de IA...</span>
+            <div id="loadingBar" class="hidden flex flex-col items-center justify-center gap-3 bg-[#05070A] border border-purple-500/50 p-6 rounded-2xl mt-4 shadow-inner">
+                <div class="relative w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2">
+                    <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-400 via-purple-500 to-indigo-500 w-1/2 animate-[pulse_1s_ease-in-out_infinite]"></div>
+                </div>
+                <span id="logText" class="text-xs font-bold text-purple-300 uppercase tracking-widest">Iniciando motor de IA...</span>
             </div>
         </form>
 
         <div id="results" class="hidden space-y-6">
+            <!-- DASHBOARD GRATIS CON GRÁFICA DE RADAR -->
             <div class="glass-card p-6 md:p-8 rounded-3xl">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-slate-800/80 pb-5">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-slate-800/80 pb-6">
                     <div>
-                        <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">ESTRATEGIA GENERADA</span>
-                        <h3 id="resTitle" class="heading text-xl md:text-3xl font-bold text-white mt-1 leading-tight">...</h3>
+                        <span class="text-[10px] font-black text-purple-500 uppercase tracking-widest">ESTRATEGIA GENERADA</span>
+                        <h3 id="resTitle" class="heading text-2xl md:text-3xl font-bold text-white mt-1 leading-tight">...</h3>
                     </div>
-                    <div class="mt-3 md:mt-0 bg-purple-900/30 border border-purple-500/50 px-4 py-2 rounded-full text-right shadow-inner shadow-purple-500/20">
-                        <span class="text-[11px] font-bold text-purple-200">Score Competencia: <span id="resScore" class="font-black text-white">...</span></span>
-                    </div>
-                </div>
-
-                <div class="mb-8">
-                    <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-column text-slate-500"></i> COMPARATIVA TU MARCA VS COMPETIDOR</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                        <div class="bg-[#0B0F19] border border-[#1E293B] p-4 rounded-xl">
-                            <span class="block text-[10px] font-bold text-slate-500 uppercase mb-1">ENGAGEMENT RATE</span>
-                            <span id="mEng" class="text-sm font-black text-white">...</span>
-                        </div>
-                        <div class="bg-[#0B0F19] border border-[#1E293B] p-4 rounded-xl">
-                            <span class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CALIDAD VISUAL</span>
-                            <span id="mQua" class="text-sm font-black text-white">...</span>
-                        </div>
-                        <div class="bg-[#0B0F19] border border-[#1E293B] p-4 rounded-xl">
-                            <span class="block text-[10px] font-bold text-slate-500 uppercase mb-1">FRECUENCIA SEMANAL</span>
-                            <span id="mFre" class="text-sm font-black text-white">...</span>
-                        </div>
+                    <div class="mt-4 md:mt-0 bg-[#0B0F19] border border-purple-500/50 px-5 py-3 rounded-2xl text-center shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+                        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">SCORE DE DOMINIO</span>
+                        <span id="resScore" class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">...</span>
                     </div>
                 </div>
 
-                <div class="mb-2">
-                    <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-crosshairs text-slate-500"></i> MATRIZ FODA Y OPORTUNIDADES DE ATAQUE</h4>
-                    <div class="grid md:grid-cols-2 gap-5">
-                        <div class="bg-[#0B0F19] border border-[#1E293B] p-6 rounded-xl">
-                            <span class="flex items-center gap-2 text-[10px] font-bold text-emerald-500 uppercase mb-4"><i class="fa-solid fa-circle-dot"></i> DEBILIDADES DEL RIVAL</span>
-                            <ul id="resWeak" class="text-[13px] text-slate-300 space-y-3 list-disc pl-4 marker:text-slate-600 leading-relaxed"></ul>
+                <div class="grid lg:grid-cols-12 gap-8 mb-8">
+                    <!-- MATRIZ FODA (Izquierda 7 columnas) -->
+                    <div class="lg:col-span-7 space-y-6">
+                        <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2"><i class="fa-solid fa-crosshairs text-slate-500"></i> MATRIZ FODA Y OPORTUNIDADES</h4>
+                        <div class="grid sm:grid-cols-2 gap-5">
+                            <div class="bg-[#05070A] border border-red-900/30 p-5 rounded-2xl shadow-inner">
+                                <span class="flex items-center gap-2 text-[10px] font-bold text-red-500 uppercase mb-4"><i class="fa-solid fa-circle-dot"></i> DEBILIDADES DEL RIVAL</span>
+                                <ul id="resWeak" class="text-[13px] text-slate-300 space-y-3 list-disc pl-4 marker:text-red-900/50 leading-relaxed"></ul>
+                            </div>
+                            <div class="bg-[#05070A] border border-emerald-900/30 p-5 rounded-2xl shadow-inner">
+                                <span class="flex items-center gap-2 text-[10px] font-bold text-emerald-400 uppercase mb-4"><i class="fa-solid fa-bolt text-emerald-500"></i> ESTRATEGIA DE ATAQUE</span>
+                                <ul id="resAtk" class="text-[13px] text-slate-300 space-y-3 list-disc pl-4 marker:text-emerald-900/50 leading-relaxed"></ul>
+                            </div>
                         </div>
-                        <div class="bg-[#0B0F19] border border-[#1E293B] p-6 rounded-xl">
-                            <span class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase mb-4"><i class="fa-solid fa-xmark text-slate-500"></i> ESTRATEGIA DE ATAQUE</span>
-                            <ul id="resAtk" class="text-[13px] text-slate-300 space-y-3 list-disc pl-4 marker:text-slate-600 leading-relaxed"></ul>
+                    </div>
+
+                    <!-- GRÁFICA RADAR (Derecha 5 columnas) -->
+                    <div class="lg:col-span-5 bg-[#05070A] border border-[#1E293B] p-5 rounded-2xl flex flex-col items-center justify-center">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">MAPA DE COMPETITIVIDAD</h4>
+                        <div class="w-full max-w-[280px] aspect-square relative">
+                            <canvas id="radarChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- PRO SECTION -->
+            <!-- PRO SECTION PROTEGIDA -->
             <div id="proContainer" class="relative">
                 <div id="proData" class="glass-card p-6 md:p-8 rounded-3xl space-y-8">
                     
                     <div class="grid md:grid-cols-2 gap-8 border-b border-slate-800/80 pb-8">
                         <div>
                             <h4 class="text-[11px] font-extrabold text-red-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i class="fa-solid fa-calendar text-red-500"></i> Plan de Contenido Semanal</h4>
-                            <div id="resPlan" class="space-y-4 text-[13px] text-slate-300 leading-relaxed"></div>
+                            <div id="resPlan" class="space-y-5 text-[13px] text-slate-300 leading-relaxed bg-[#05070A] p-5 rounded-2xl border border-[#1E293B]"></div>
                         </div>
                         <div class="space-y-6">
-                            <div>
-                                <h4 class="text-[11px] font-extrabold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-lightbulb text-amber-500"></i> Recomendaciones Clave</h4>
+                            <div class="bg-[#05070A] p-5 rounded-2xl border border-[#1E293B]">
+                                <h4 class="text-[11px] font-extrabold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-lightbulb text-amber-500"></i> Recomendación Experta</h4>
                                 <p id="resRec" class="text-[13px] text-slate-300 leading-relaxed"></p>
                             </div>
-                            <div>
-                                <h4 class="text-[10px] font-bold text-slate-500 uppercase mb-1">HASHTAGS SUGERIDOS</h4>
-                                <p id="resHash" class="text-[13px] text-purple-400 font-mono"></p>
+                            <div class="bg-[#05070A] p-5 rounded-2xl border border-[#1E293B]">
+                                <h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2">HASHTAGS DE ALTO IMPACTO</h4>
+                                <p id="resHash" class="text-[13px] text-purple-400 font-mono font-bold tracking-wide"></p>
                             </div>
                         </div>
                     </div>
 
                     <div>
                         <div class="flex items-center justify-between mb-5">
-                            <h4 class="heading text-xl font-bold text-white">Placas del Carrusel Publicitario HD</h4>
+                            <h4 class="heading text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-images text-purple-500"></i> Placas del Carrusel Publicitario HD</h4>
                         </div>
-                        <p class="text-[11px] text-slate-500 mb-5">Las imágenes renderizadas están generadas específicamente para tu nicho. Clic en "Descargar HD" para guardarlas en calidad máxima.</p>
+                        <p class="text-[11px] text-slate-400 mb-6 bg-purple-900/20 inline-block px-3 py-1.5 rounded-lg border border-purple-900/50">Las imágenes renderizadas son únicas, fotorrealistas y generadas específicamente para tu nicho. Clic en "Descargar HD" para guardarlas en máxima calidad (1080x1080).</p>
                         
-                        <div id="carGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div class="aspect-square bg-[#0B0F19] border border-[#1E293B] rounded-xl flex items-center justify-center text-slate-600"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
-                            <div class="aspect-square bg-[#0B0F19] border border-[#1E293B] rounded-xl flex items-center justify-center text-slate-600"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
-                            <div class="aspect-square bg-[#0B0F19] border border-[#1E293B] rounded-xl flex items-center justify-center text-slate-600"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
-                            <div class="aspect-square bg-[#0B0F19] border border-[#1E293B] rounded-xl flex items-center justify-center text-slate-600"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
+                        <div id="carGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Skeletons Laser -->
+                            <div class="aspect-square bg-[#05070A] border border-[#1E293B] rounded-2xl flex flex-col items-center justify-center text-slate-600 relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent w-full h-[10%] animate-[scan_2s_linear_infinite]"></div>
+                                <i class="fa-solid fa-camera-viewfinder text-3xl mb-3"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando...</span>
+                            </div>
+                            <div class="aspect-square bg-[#05070A] border border-[#1E293B] rounded-2xl flex flex-col items-center justify-center text-slate-600 relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent w-full h-[10%] animate-[scan_2s_linear_infinite] delay-500"></div>
+                                <i class="fa-solid fa-camera-viewfinder text-3xl mb-3"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Renderizando...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="paywall" class="hidden absolute inset-0 bg-[#0B0F19]/80 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-6 text-center z-10 border border-[#1E293B]">
-                    <div class="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-400 text-3xl mb-4 border border-amber-500/20"><i class="fa-solid fa-lock"></i></div>
-                    <h3 class="heading text-2xl font-bold text-white mb-2">Desbloquea el Studio PRO</h3>
-                    <p class="text-sm text-slate-300 max-w-md mb-6 leading-relaxed">Obtén el plan de contenidos semanal, las recomendaciones tácticas expertas y descarga las 4 imágenes HD de tu carrusel basadas en tu negocio real.</p>
+                <!-- PAYWALL -->
+                <div id="paywall" class="hidden absolute inset-0 bg-[#05070A]/85 backdrop-blur-[16px] rounded-3xl flex flex-col items-center justify-center p-6 text-center z-10 border border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.15)]">
+                    <div class="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-400 text-4xl mb-5 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]"><i class="fa-solid fa-lock"></i></div>
+                    <h3 class="heading text-3xl font-bold text-white mb-3">Desbloquea el Studio PRO</h3>
+                    <p class="text-sm text-slate-300 max-w-lg mb-8 leading-relaxed">El FODA ha sido generado. Para visualizar tu plan de contenidos semanal detallado, recomendaciones tácticas de neuromarketing y descargar las 4 imágenes HD hiperrealistas de tu carrusel, adquiere créditos.</p>
                     
                     {% if not user %}
-                        <a href="/auth/login" class="px-8 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-sm rounded-xl uppercase tracking-widest shadow-lg transition"><i class="fa-brands fa-google mr-2"></i> Inicia Sesión para Comprar</a>
+                        <a href="/auth/login" class="px-10 py-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-sm rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(147,51,234,0.4)] transition hover:scale-105"><i class="fa-brands fa-google mr-2"></i> Inicia Sesión para Comprar</a>
                     {% else %}
-                        <button onclick="document.getElementById('modalRecharge').classList.remove('hidden')" class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-sm rounded-xl uppercase tracking-widest hover:scale-105 transition"><i class="fa-solid fa-crown mr-2"></i> Ver Planes y Recargar</button>
+                        <button onclick="document.getElementById('modalRecharge').classList.remove('hidden')" class="px-10 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-sm rounded-xl uppercase tracking-widest hover:scale-105 transition shadow-[0_0_20px_rgba(245,158,11,0.4)]"><i class="fa-solid fa-crown mr-2"></i> Ver Planes y Recargar</button>
                     {% endif %}
                 </div>
             </div>
@@ -195,48 +220,61 @@
     </main>
 
     <!-- Modal Planes y Pago -->
-    <div id="modalRecharge" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="glass-card p-6 md:p-8 rounded-3xl max-w-md w-full relative">
-            <button onclick="document.getElementById('modalRecharge').classList.add('hidden')" class="absolute top-5 right-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            <h3 class="heading text-2xl font-bold text-white mb-5 text-center">Planes AdVance</h3>
+    <div id="modalRecharge" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-card p-6 md:p-8 rounded-3xl max-w-md w-full relative shadow-2xl">
+            <button onclick="document.getElementById('modalRecharge').classList.add('hidden')" class="absolute top-5 right-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            <h3 class="heading text-2xl font-bold text-white mb-6 text-center">Planes AdVance</h3>
             
             <div class="space-y-4 mb-6">
-                <div class="bg-[#0B0F19] border border-[#1E293B] p-4 rounded-xl flex justify-between items-center">
+                <!-- STARTER -->
+                <div class="bg-[#05070A] border border-[#1E293B] p-4 rounded-xl flex justify-between items-center hover:border-slate-500 transition">
                     <div>
-                        <span class="block text-sm font-bold text-white">Starter</span>
-                        <span class="text-[11px] text-slate-400">3 Créditos</span>
+                        <span class="block text-sm font-bold text-white mb-0.5">Starter</span>
+                        <span class="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">3 Créditos</span>
                     </div>
-                    <span class="text-base font-black text-slate-300">S/ 10</span>
+                    <span class="text-lg font-black text-slate-300">S/ 10</span>
                 </div>
-                <div class="bg-purple-900/30 border border-purple-500 p-4 rounded-xl flex justify-between items-center shadow-lg shadow-purple-500/20">
+                <!-- EMPRENDEDOR -->
+                <div class="bg-purple-900/30 border border-purple-500 p-4 rounded-xl flex justify-between items-center shadow-[0_0_20px_rgba(168,85,247,0.2)] transform scale-105">
                     <div>
-                        <span class="block text-sm font-bold text-white">Emprendedor <span class="text-[9px] bg-purple-500 px-1.5 py-0.5 rounded ml-2 text-white">RECOMENDADO</span></span>
-                        <span class="text-[11px] text-purple-200">12 Créditos</span>
+                        <span class="block text-sm font-bold text-white mb-0.5">Emprendedor <span class="text-[8px] bg-purple-500 px-1.5 py-0.5 rounded ml-2 text-white shadow-lg">RECOMENDADO</span></span>
+                        <span class="text-[10px] text-purple-200 bg-purple-950 px-2 py-0.5 rounded border border-purple-800">12 Créditos</span>
                     </div>
-                    <span class="text-base font-black text-purple-400">S/ 35</span>
+                    <span class="text-xl font-black text-purple-400">S/ 35</span>
                 </div>
-                <div class="bg-[#0B0F19] border border-[#1E293B] p-4 rounded-xl flex justify-between items-center">
+                <!-- PRO -->
+                <div class="bg-[#05070A] border border-[#1E293B] p-4 rounded-xl flex justify-between items-center hover:border-amber-500/50 transition">
                     <div>
-                        <span class="block text-sm font-bold text-white">PRO</span>
-                        <span class="text-[11px] text-slate-400">35 Créditos</span>
+                        <span class="block text-sm font-bold text-white mb-0.5">PRO Studio</span>
+                        <span class="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">35 Créditos</span>
                     </div>
-                    <span class="text-base font-black text-amber-400">S/ 90</span>
+                    <span class="text-lg font-black text-amber-400">S/ 90</span>
                 </div>
             </div>
 
-            <div class="bg-[#05070B] p-5 rounded-2xl mb-5 text-center border border-[#1E293B]">
-                <span class="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">PAGA CON YAPE / PLIN A:</span>
-                <span class="text-3xl font-black text-white">999 888 777</span>
+            <div class="bg-[#05070A] p-5 rounded-2xl mb-6 text-center border border-[#1E293B]">
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">TRANSFIERE A (YAPE / PLIN):</span>
+                <span class="text-3xl font-black text-white tracking-wider">999 888 777</span>
             </div>
 
             <form id="payForm" class="space-y-4">
-                <input type="file" name="receipt" required accept="image/*" class="w-full text-sm text-slate-400 file:mr-3 file:py-3 file:px-5 file:rounded-xl file:border-0 file:bg-purple-600 file:text-white file:font-bold hover:file:bg-purple-500 cursor-pointer">
-                <button type="submit" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm rounded-xl uppercase tracking-widest transition shadow-lg">Enviar Voucher de Pago</button>
+                <input type="file" name="receipt" required accept="image/*" class="w-full text-sm text-slate-400 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:bg-purple-600 file:text-white file:font-bold hover:file:bg-purple-500 cursor-pointer border border-[#1E293B] bg-[#05070A] rounded-xl p-1">
+                <button type="submit" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm rounded-xl uppercase tracking-widest transition shadow-[0_0_15px_rgba(16,185,129,0.3)]">Enviar Voucher de Pago</button>
             </form>
         </div>
     </div>
 
+    <!-- Estilos extras para animaciones -->
+    <style>
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(1000%); }
+        }
+    </style>
+
     <script>
+        let radarChartInstance = null; // Para destruir la gráfica anterior si vuelve a consultar
+
         document.getElementById('aiForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -274,17 +312,45 @@
                             document.getElementById('mEng').innerText = `Tú: ${data.metrics.engagement.tu} vs R: ${data.metrics.engagement.rival}`;
                             document.getElementById('mQua').innerText = `Tú: ${data.metrics.quality.tu} vs R: ${data.metrics.quality.rival}`;
                             document.getElementById('mFre').innerText = `Tú: ${data.metrics.freq.tu} vs R: ${data.metrics.freq.rival}`;
-                            document.getElementById('resWeak').innerHTML = data.rival_weaknesses.map(w => `<li>${w}</li>`).join('');
-                            document.getElementById('resAtk').innerHTML = data.attack_strategies.map(s => `<li>${s}</li>`).join('');
+                            document.getElementById('resWeak').innerHTML = data.rival_weaknesses.map(w => `<li class="mb-2"><strong>${w.split(' ')[0]}</strong> ${w.substring(w.indexOf(' ')+1)}</li>`).join('');
+                            document.getElementById('resAtk').innerHTML = data.attack_strategies.map(s => `<li class="mb-2"><strong>${s.split(' ')[0]}</strong> ${s.substring(s.indexOf(' ')+1)}</li>`).join('');
                             
-                            // SE ARREGLÓ EL MAPEO DE JS EXACTAMENTE A LO QUE MANDA PYTHON
-                            document.getElementById('resPlan').innerHTML = `
-                                <div class="mb-4"><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Lunes:</strong> ${data.weekly_plan.lunes}</div>
-                                <div class="mb-4"><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Miércoles:</strong> ${data.weekly_plan.miercoles}</div>
-                                <div><strong class="text-white block mb-1 uppercase tracking-widest text-[10px]">Viernes:</strong> ${data.weekly_plan.viernes}</div>
-                            `;
-                            document.getElementById('resRec').innerText = data.recommendations;
-                            document.getElementById('resHash').innerText = data.hashtags;
+                            // === DIBUJAR GRÁFICA RADAR ===
+                            if (radarChartInstance) radarChartInstance.destroy();
+                            const ctx = document.getElementById('radarChart').getContext('2d');
+                            radarChartInstance = new Chart(ctx, {
+                                type: 'radar',
+                                data: {
+                                    labels: ['Engagement', 'Calidad', 'Frecuencia', 'Autoridad', 'Conversión'],
+                                    datasets: [{
+                                        label: 'Tu Marca',
+                                        data: [data.chart.tu.eng, data.chart.tu.qual, data.chart.tu.freq, data.chart.tu.auth, data.chart.tu.conv],
+                                        backgroundColor: 'rgba(168, 85, 247, 0.25)',
+                                        borderColor: '#A855F7',
+                                        pointBackgroundColor: '#A855F7',
+                                        borderWidth: 2
+                                    }, {
+                                        label: 'Competidor',
+                                        data: [data.chart.rival.eng, data.chart.rival.qual, data.chart.rival.freq, data.chart.rival.auth, data.chart.rival.conv],
+                                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                        borderColor: '#EF4444',
+                                        pointBackgroundColor: '#EF4444',
+                                        borderWidth: 2
+                                    }]
+                                },
+                                options: {
+                                    scales: {
+                                        r: {
+                                            angleLines: { color: 'rgba(255,255,255,0.05)' },
+                                            grid: { color: 'rgba(255,255,255,0.05)' },
+                                            pointLabels: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' } },
+                                            ticks: { display: false, min: 0, max: 100 }
+                                        }
+                                    },
+                                    plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } } },
+                                    maintainAspectRatio: false
+                                }
+                            });
                         } 
                         else if (data.type === 'paywall') {
                             document.getElementById('proData').classList.add('blur-paywall');
@@ -293,19 +359,32 @@
                             btn.disabled = false; btn.classList.remove('opacity-50');
                         }
                         else if (data.type === 'carousel') {
+                            document.getElementById('resPlan').innerHTML = `
+                                <div class="mb-4"><strong class="text-purple-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-bullhorn mr-1"></i> Lunes:</strong> ${data.weekly_plan.lunes}</div>
+                                <div class="mb-4"><strong class="text-cyan-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-book-open mr-1"></i> Miércoles:</strong> ${data.weekly_plan.miercoles}</div>
+                                <div><strong class="text-amber-400 block mb-1 uppercase tracking-widest text-[10px]"><i class="fa-solid fa-cart-shopping mr-1"></i> Viernes:</strong> ${data.weekly_plan.viernes}</div>
+                            `;
+                            document.getElementById('resRec').innerText = data.recommendations;
+                            document.getElementById('resHash').innerText = data.hashtags;
+
                             document.getElementById('carGrid').innerHTML = data.slides.map(s => `
-                                <div class="relative rounded-2xl overflow-hidden border border-[#1E293B] aspect-square group bg-[#0B0F19]">
-                                    <img src="${s.image_url}" class="w-full h-full object-cover">
-                                    <div class="absolute top-4 left-4 bg-purple-600 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg uppercase tracking-wider">${s.tag}</div>
-                                    <div class="absolute top-4 right-4 bg-purple-900/80 border border-purple-500/50 text-purple-200 text-[9px] font-black px-3 py-1.5 rounded shadow-lg flex items-center gap-1"><i class="fa-solid fa-image"></i> HD</div>
-                                    
-                                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0B0F19] via-[#0B0F19]/90 to-transparent pt-16 pb-5 px-5">
-                                        <p class="text-sm font-bold text-purple-300 leading-tight mb-1.5">${s.headline}</p>
-                                        <p class="text-xs text-slate-300 leading-snug">${s.copy}</p>
+                                <div class="relative rounded-2xl overflow-hidden border border-[#1E293B] aspect-square group bg-[#05070A] shadow-lg">
+                                    <!-- IMAGEN RECORTADA CON TRUCO CSS PARA BORRAR MARCA DE AGUA -->
+                                    <div class="w-full h-full relative overflow-hidden">
+                                        <img src="${s.image_url}" class="img-no-watermark group-hover:scale-[1.12] transition duration-500">
                                     </div>
                                     
-                                    <a href="${s.image_url}" download="Placa_${s.tag}.jpg" target="_blank" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-sm">
-                                        <div class="bg-purple-600 text-white px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-2xl hover:bg-purple-500 scale-95 group-hover:scale-100 transition"><i class="fa-solid fa-download"></i> Descargar HD</div>
+                                    <div class="absolute top-4 left-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg uppercase tracking-wider">${s.tag}</div>
+                                    <div class="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded shadow-lg flex items-center gap-1"><i class="fa-solid fa-image"></i> HD 8K</div>
+                                    
+                                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent pt-20 pb-5 px-5">
+                                        <p class="text-base font-bold text-white leading-tight mb-1 drop-shadow-md">${s.headline}</p>
+                                        <p class="text-xs text-slate-300 leading-snug drop-shadow-md">${s.copy}</p>
+                                    </div>
+                                    
+                                    <!-- Botón Descargar en Hover -->
+                                    <a href="${s.image_url}" download="Placa_${s.tag}.jpg" target="_blank" class="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-sm z-20">
+                                        <div class="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.5)] hover:scale-105 transition"><i class="fa-solid fa-download"></i> Descargar HD</div>
                                     </a>
                                 </div>
                             `).join('');
@@ -325,6 +404,8 @@
 
         document.getElementById('payForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true; btn.innerText = 'Enviando...';
             const formData = new FormData(e.target);
             try {
                 await fetch('/api/recharge', { method: 'POST', body: formData });
@@ -334,6 +415,7 @@
             } catch (err) {
                 alert("Hubo un problema enviando el voucher. Intenta de nuevo.");
             }
+            btn.disabled = false; btn.innerText = 'Enviar Voucher de Pago';
         });
     </script>
 </body>

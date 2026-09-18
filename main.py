@@ -51,9 +51,19 @@ def get_gemini_model():
         return genai.GenerativeModel("gemini-1.5-flash")
     return None
 
+def extract_clean_name(url: str) -> str:
+    """Extrae el nombre limpio si es una URL, de lo contrario devuelve el texto original"""
+    if "instagram.com" in url or "facebook.com" in url or "tiktok.com" in url:
+        match = re.search(r'([a-zA-Z0-9_.-]+)/?(?:\?.*)?$', url.strip('/'))
+        if match: return match.group(1).replace('_', ' ').replace('-', ' ').title()
+    if "http" in url:
+        match = re.search(r'://(?:www\.)?([^/]+)', url)
+        if match: return match.group(1).split('.')[0].title()
+    return url[:25].title()
+
 async def scrape_url(url: str):
     try:
-        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=4.0, follow_redirects=True) as client:
             resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
             if resp.status_code == 200:
                 soup = BeautifulSoup(resp.text, "html.parser")
@@ -105,7 +115,7 @@ async def admin(request: Request):
 async def recharge(request: Request, receipt: UploadFile = File(...)):
     user = request.session.get('user')
     if not user:
-        return {"success": False, "error": "No has iniciado sesión"}
+        return {"success": False}
     path = f"uploads/{receipt.filename}"
     with open(path, "wb") as f:
         f.write(await receipt.read())
@@ -129,8 +139,11 @@ async def admin_assign(request: Request, email: str = Form(...), credits: int = 
     return {"success": False}
 
 async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_files: list):
-    yield f"data: {json.dumps({'type': 'log', 'msg': 'Extrayendo inteligencia de mercado y procesando contexto...'})}\n\n"
+    yield f"data: {json.dumps({'type': 'log', 'msg': 'Extrayendo inteligencia de mercado...'})}\n\n"
     await asyncio.sleep(0.5)
+    
+    clean_biz_name = extract_clean_name(biz)
+    clean_comp_name = extract_clean_name(comp)
     
     biz_text = await scrape_url(biz) if re.match(r'^https?://', biz) else biz
     comp_text = await scrape_url(comp) if re.match(r'^https?://', comp) else comp
@@ -138,30 +151,35 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_fil
     yield f"data: {json.dumps({'type': 'log', 'msg': 'Procesando modelo estratégico avanzado con Gemini...'})}\n\n"
     
     prompt = f"""
-    Eres un Consultor y Copywriter de Alto Nivel. Redacta un análisis premium extremadamente detallado, persuasivo y extenso.
-    Negocio del cliente: '{biz_text}'. Competidor: '{comp_text}'. Enfoque: '{angle}'.
+    Eres un Consultor y Copywriter de Alto Nivel. Redacta un análisis premium y persuasivo.
+    Negocio: '{biz_text}' (Nombre: {clean_biz_name}). Competidor: '{comp_text}' (Nombre: {clean_comp_name}). Enfoque: '{angle}'.
     
-    IMPORTANTE PARA 'image_prompt': Escribe los prompts en INGLÉS detallado. Si el cliente subió fotos, o menciona productos físicos (ej. comida, ropa, jabones), el prompt debe describir EXACTAMENTE ese producto usando términos como "high-end commercial macro photography of [producto exacto], cinematic studio lighting, 8k resolution". No uses textos genéricos.
+    INSTRUCCIONES PARA 'image_prompt': 
+    Debes escribir el prompt en INGLÉS EXTREMADAMENTE DETALLADO. Describe el PRODUCTO EXACTO (ej. 'artisanal organic soap', 'juicy double burger'). 
+    Debes añadir AL FINAL de cada image_prompt esto: ", high-end commercial macro photography, cinematic studio lighting, highly detailed, 8k resolution, photorealistic".
     
-    Responde ÚNICAMENTE en este JSON estricto:
+    Responde ÚNICAMENTE en JSON estricto:
     {{
-        "title": "Campaña de Dominio: [Nombre] vs El Mercado",
+        "title": "Campaña de Dominio: {clean_biz_name} vs {clean_comp_name}",
         "score": 89,
-        "metrics": {{ "engagement": {{"tu": "8.5%", "rival": "4.2%"}}, "quality": {{"tu": "95/100", "rival": "70/100"}}, "freq": {{"tu": "5x/sem", "rival": "3x/sem"}} }},
-        "rival_weaknesses": ["Debilidad extensa y detallada 1", "Debilidad extensa y detallada 2", "Debilidad extensa y detallada 3"],
-        "attack_strategies": ["Estrategia táctica profunda 1", "Estrategia táctica profunda 2", "Estrategia táctica profunda 3"],
-        "weekly_plan": {{
-            "lunes": "Escribe 3-4 líneas detalladas con el enfoque del gancho para el lunes.",
-            "miercoles": "Escribe 3-4 líneas detalladas sobre el contenido de valor educativo para el miércoles.",
-            "viernes": "Escribe 3-4 líneas detalladas con el copy de venta agresiva y escasez para el viernes."
+        "chart": {{
+             "tu": {{"eng": 85, "qual": 95, "freq": 60, "auth": 80, "conv": 90}},
+             "rival": {{"eng": 50, "qual": 70, "freq": 80, "auth": 60, "conv": 65}}
         }},
-        "recommendations": "Redacta un párrafo extenso (5-6 líneas) con consejos expertos de marketing, neuromarketing y posicionamiento de marca.",
-        "hashtags": "#Marketing #Estrategia #Escalabilidad #Premium",
+        "rival_weaknesses": ["Debilidad extensa 1", "Debilidad extensa 2", "Debilidad extensa 3"],
+        "attack_strategies": ["Estrategia táctica 1", "Estrategia táctica 2", "Estrategia táctica 3"],
+        "weekly_plan": {{
+            "lunes": "Copy Gancho extenso (2-3 líneas).",
+            "miercoles": "Copy Valor educativo extenso.",
+            "viernes": "Copy Venta con escasez extenso."
+        }},
+        "recommendations": "Un párrafo extenso (5-6 líneas) con consejos expertos de neuromarketing.",
+        "hashtags": "#Marketing #Estrategia #Premium",
         "carousel": [
-            {{"tag": "GANCHO", "headline": "Titular de alto impacto", "copy": "Copy persuasivo de 2 líneas", "image_prompt": "english detailed prompt of the exact product"}},
-            {{"tag": "VALOR", "headline": "Titular de beneficio", "copy": "Copy persuasivo de 2 líneas", "image_prompt": "english detailed prompt showing ingredients or texture of the product"}},
-            {{"tag": "DIFERENCIADOR", "headline": "Titular de autoridad", "copy": "Copy persuasivo de 2 líneas", "image_prompt": "english detailed prompt showing the product in lifestyle use"}},
-            {{"tag": "OFERTA", "headline": "Llamado a la acción", "copy": "Copy persuasivo de cierre", "image_prompt": "english detailed prompt showing a premium bundle packaging of the product"}}
+            {{"tag": "GANCHO", "headline": "Titular 1", "copy": "Copy 1", "image_prompt": "english detailed prompt of the exact product"}},
+            {{"tag": "VALOR", "headline": "Titular 2", "copy": "Copy 2", "image_prompt": "english detailed prompt of ingredients/texture"}},
+            {{"tag": "DIFERENCIADOR", "headline": "Titular 3", "copy": "Copy 3", "image_prompt": "english detailed prompt of lifestyle use"}},
+            {{"tag": "OFERTA", "headline": "Titular 4", "copy": "Copy 4", "image_prompt": "english detailed prompt of premium bundle packaging"}}
         ]
     }}
     """
@@ -175,20 +193,22 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_fil
     if model:
         try:
             resp = await asyncio.to_thread(model.generate_content, contents)
-            match = re.search(r'\{.*\}', resp.text, re.DOTALL)
+            match = re.search(r'\{[\s\S]*\}', resp.text)
             if match:
                 data = json.loads(match.group(0))
         except Exception as e:
             print(f"Error IA: {e}")
             pass
 
-    # FALLBACK PREMIUM ULTRADETALLADO (Se usa si Gemini demora o falla)
+    # FALLBACK PREMIUM ULTRADETALLADO
     if not data:
-        biz_name = biz_text[:20] if len(biz_text) > 5 else "Tu Producto"
         data = {
-            "title": f"Plan de Expansión: {biz_name} vs La Competencia",
+            "title": f"Plan de Expansión: {clean_biz_name} vs {clean_comp_name}",
             "score": 92,
-            "metrics": {"engagement": {"tu": "8.5%", "rival": "4.2%"}, "quality": {"tu": "95/100", "rival": "70/100"}, "freq": {"tu": "5x/sem", "rival": "3x/sem"}},
+            "chart": {
+                 "tu": {"eng": 88, "qual": 95, "freq": 70, "auth": 85, "conv": 92},
+                 "rival": {"eng": 55, "qual": 65, "freq": 85, "auth": 70, "conv": 60}
+            },
             "rival_weaknesses": [
                 "Falta de storytelling emocional en sus descripciones de producto, centrándose exclusivamente en características técnicas que aburren al consumidor.",
                 "Experiencia de usuario fragmentada y una atención al cliente automatizada que genera fricción y abandono de carritos.",
@@ -200,21 +220,21 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_fil
                 "Lanzar ofertas de 'Bundle' (Paquetes) para aumentar radicalmente el ticket promedio de compra y absorber el costo de adquisición de clientes."
             ],
             "weekly_plan": {
-                "lunes": "[EL GANCHO] Rompe el mito principal de tu industria. Muestra en un reel corto de 7 segundos por qué el método o producto tradicional que usa tu competencia falla a largo plazo. Usa un audio en tendencia y texto grande.",
+                "lunes": "[EL GANCHO] Rompe el mito principal de tu industria. Muestra en un reel corto de 7 segundos por qué el método que usa tu competencia falla a largo plazo. Usa un audio en tendencia y texto grande.",
                 "miercoles": "[EL VALOR] Detrás de escena: Muestra la extrema calidad de tus materiales o ingredientes. Crea un carrusel educativo que justifique el valor de tu oferta, respondiendo a la objeción de precio antes de que el cliente la piense.",
                 "viernes": "[LA VENTA DIRECTA] Lanza una oferta irresistible por tiempo limitado con escasez real (solo 10 unidades o válido por 24 horas) y un llamado a la acción claro, dirigiéndolos hacia tu WhatsApp o tienda web."
             },
             "recommendations": "Tu principal ventaja competitiva en este momento es la agilidad y el servicio. Mientras tu competidor mantiene una comunicación fría e institucional, tú debes humanizar la marca. Muestra el proceso, cuenta tu historia de origen con transparencia y asegúrate de responder a todos los comentarios en los primeros 15 minutos de publicación para maximizar el empuje del algoritmo en Instagram y TikTok. El mercado valora a las marcas auténticas.",
             "hashtags": "#EstrategiaPremium #CrecimientoEscalable #DominioDeMercado #AltaConversion #MarcasConProposito",
             "carousel": [
-                {"tag": "GANCHO", "headline": "El Secreto Revelado", "copy": "Lo que la industria tradicional no quiere que sepas sobre la verdadera calidad.", "image_prompt": f"macro commercial photography of {biz_name}, cinematic lighting, highly detailed, 8k resolution, elegant dark background"},
-                {"tag": "VALOR", "headline": "Calidad Absoluta", "copy": "Formulado y diseñado con estándares de grado superior que otros ignoran.", "image_prompt": f"aesthetic lifestyle showcase of {biz_name}, natural lighting, premium soft shadows, 4k"},
-                {"tag": "DIFERENCIADOR", "headline": "Experiencia Única", "copy": "Resultados tangibles que tus clientes notarán desde el primer día de uso.", "image_prompt": f"high end luxury details of {biz_name}, sharp focus, professional studio lighting, depth of field"},
-                {"tag": "OFERTA", "headline": "Asegura el Tuyo", "copy": "Unidades estrictamente limitadas con envío express garantizado para hoy.", "image_prompt": f"premium product bundle packaging of {biz_name}, elegant setup, clean sophisticated aesthetic"}
+                {"tag": "GANCHO", "headline": "El Secreto Revelado", "copy": "Lo que la industria tradicional no quiere que sepas sobre la verdadera calidad.", "image_prompt": f"macro commercial photography of {clean_biz_name}, cinematic lighting, highly detailed, 8k resolution, elegant dark background"},
+                {"tag": "VALOR", "headline": "Calidad Absoluta", "copy": "Formulado y diseñado con estándares de grado superior que otros ignoran.", "image_prompt": f"aesthetic lifestyle showcase of {clean_biz_name}, natural lighting, premium soft shadows, 4k"},
+                {"tag": "DIFERENCIADOR", "headline": "Experiencia Única", "copy": "Resultados tangibles que tus clientes notarán desde el primer día de uso.", "image_prompt": f"high end luxury details of {clean_biz_name}, sharp focus, professional studio lighting, depth of field"},
+                {"tag": "OFERTA", "headline": "Asegura el Tuyo", "copy": "Unidades estrictamente limitadas con envío express garantizado para hoy.", "image_prompt": f"premium product bundle packaging of {clean_biz_name}, elegant setup, clean sophisticated aesthetic"}
             ]
         }
 
-    # TIEMPO 1: ENVIAR TEXTO
+    # TIEMPO 1: ENVIAR TEXTO + DATOS DEL GRÁFICO
     strategy_payload = {k: v for k, v in data.items() if k != "carousel"}
     strategy_payload["type"] = "strategy"
     yield f"data: {json.dumps(strategy_payload)}\n\n"
@@ -226,18 +246,20 @@ async def pipeline_generator(user, biz: str, comp: str, angle: str, uploaded_fil
         yield f"data: {json.dumps({'type': 'paywall'})}\n\n"
         return
 
-    # TIEMPO 2: IMÁGENES PRO
+    # TIEMPO 2: IMÁGENES PRO FOTORREALISTAS
     yield f"data: {json.dumps({'type': 'log', 'msg': 'Renderizando placas fotográficas ultra HD basadas en tu negocio...'})}\n\n"
     await asyncio.sleep(1.0)
 
     slides = []
     for item in data["carousel"]:
-        img_prompt = urllib.parse.quote(item["image_prompt"])
+        base_prompt = item["image_prompt"].replace("\n", " ").strip()
+        enhanced_prompt = f"{base_prompt}, commercial product photography, 8k resolution, highly detailed, Unreal Engine 5 render, cinematic lighting"
+        safe_prompt = urllib.parse.quote(enhanced_prompt)
         slides.append({
             "tag": item["tag"],
             "headline": item["headline"],
             "copy": item["copy"],
-            "image_url": f"https://image.pollinations.ai/prompt/{img_prompt}?width=1080&height=1080&nologo=true&hd=true"
+            "image_url": f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true"
         })
     
     yield f"data: {json.dumps({'type': 'carousel', 'slides': slides})}\n\n"
